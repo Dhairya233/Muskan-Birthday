@@ -329,7 +329,7 @@
         async function loadDataFromCloud() {
             try {
                 // Fetch Settings
-                const { data: settingsData, error: settingsError } = await supabase
+                const { data: settingsData, error: settingsError } = await supabaseClient
                     .from('vault_settings')
                     .select('*')
                     .eq('id', 1)
@@ -358,7 +358,7 @@
                 }
 
                 // Fetch Memories
-                const { data: memData, error: memError } = await supabase
+                const { data: memData, error: memError } = await supabaseClient
                     .from('memories')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -470,7 +470,7 @@
             applyTheme();
             
             // Save theme toggle to cloud silently
-            await supabase.from('vault_settings').update({ current_theme: newTheme }).eq('id', 1);
+            await supabaseClient.from('vault_settings').update({ current_theme: newTheme }).eq('id', 1);
         });
 
         // --- CHAOS KEYWORD LOGIC ---
@@ -583,7 +583,7 @@
                 is_bypass_enabled: document.getElementById('setting-bypass').checked
             };
 
-            const { error } = await supabase.from('vault_settings').update(payload).eq('id', 1);
+            const { error } = await supabaseClient.from('vault_settings').update(payload).eq('id', 1);
 
             if (error) {
                 console.error(error);
@@ -622,7 +622,7 @@
                 vibe: vibe
             };
 
-            const { data, error } = await supabase.from('memories').insert([newMemory]).select();
+            const { data, error } = await supabaseClient.from('memories').insert([newMemory]).select();
 
             if (error) {
                 console.error(error);
