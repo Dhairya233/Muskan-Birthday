@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MAD - The Golden Trio</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -20,8 +23,6 @@
     </script>
     <style>
         body { margin: 0; padding: 0; transition: background 1s ease-in-out; }
-        
-        /* Theme Backgrounds */
         .bg-theme-birthday {
             background-color: #78350f;
             background-image: radial-gradient(ellipse at top, #d97706 0%, #9f1239 50%, #450a0a 100%);
@@ -30,11 +31,8 @@
             background-color: #44403c;
             background-image: radial-gradient(ellipse at top, #78350f 0%, #57534e 50%, #292524 100%);
         }
-
         .fade-out-scale { transform: scale(1.1); opacity: 0; pointer-events: none; }
         .theme-village .confetti-layer { display: none; }
-
-        /* Wanted Poster Paper Effect */
         .wanted-poster {
             background-color: #e5e5f7;
             background-image:  repeating-radial-gradient( circle at 0 0, transparent 0, #e5e5f7 10px ), repeating-linear-gradient( #f3e8cb55, #f3e8cb );
@@ -43,6 +41,12 @@
     </style>
 </head>
 <body id="app-body" class="min-h-screen font-serif bg-theme-birthday text-stone-100 overflow-x-hidden selection:bg-amber-900 selection:text-white">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-stone-900 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="text-6xl animate-bounce mb-4">📜</div>
+        <p class="font-serif text-amber-500 text-xl animate-pulse">Unsealing the Vault...</p>
+    </div>
 
     <!-- Chaos Keyword Fullscreen Overlay -->
     <div id="chaos-overlay" class="hidden fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
@@ -62,7 +66,7 @@
         ⚙️
     </button>
 
-    <!-- Admin Password Prompt (Hidden) -->
+    <!-- Admin Password Prompt -->
     <div id="password-prompt" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
         <div class="bg-stone-800 p-6 rounded border-2 border-stone-600 shadow-2xl">
             <h3 class="text-amber-500 mb-4 font-sans font-bold">Master Override Request</h3>
@@ -74,7 +78,7 @@
         </div>
     </div>
 
-    <!-- Admin Configuration Panel (Hidden) -->
+    <!-- Admin Configuration Panel -->
     <div id="admin-panel" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div class="bg-stone-100 p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto text-stone-800 font-sans shadow-2xl border-4 border-amber-900/20">
             <div class="flex justify-between items-center mb-6 border-b-2 border-stone-300 pb-2">
@@ -103,31 +107,28 @@
                     <textarea id="set-desc" class="w-full p-2 rounded border border-stone-300 h-24 resize-none"></textarea>
                 </div>
 
-                <!-- NEW: Wanted Board Settings -->
                 <div class="bg-red-100 p-4 rounded border border-red-300 space-y-2">
                     <h3 class="font-bold text-red-900 mb-2">Village Wanted Board</h3>
                     <label class="block font-semibold text-sm">Target Name</label>
-                    <input type="text" id="set-wanted-name" class="w-full p-2 rounded border border-stone-300" placeholder="e.g. The Birthday Thief">
+                    <input type="text" id="set-wanted-name" class="w-full p-2 rounded border border-stone-300">
                     <label class="block font-semibold text-sm mt-2">The Crime</label>
-                    <input type="text" id="set-wanted-crime" class="w-full p-2 rounded border border-stone-300" placeholder="e.g. Taking 3 hours to reply to texts">
+                    <input type="text" id="set-wanted-crime" class="w-full p-2 rounded border border-stone-300">
                     <label class="block font-semibold text-sm mt-2">Bounty Reward</label>
-                    <input type="text" id="set-wanted-bounty" class="w-full p-2 rounded border border-stone-300" placeholder="e.g. 50,000 Gold Coins">
+                    <input type="text" id="set-wanted-bounty" class="w-full p-2 rounded border border-stone-300">
                     <label class="block font-semibold text-sm mt-2">Mugshot Image URL</label>
-                    <input type="text" id="set-wanted-img" class="w-full p-2 rounded border border-stone-300" placeholder="Link to an embarrassing photo">
+                    <input type="text" id="set-wanted-img" class="w-full p-2 rounded border border-stone-300">
                 </div>
 
-                <!-- NEW: Chaos Key Settings -->
                 <div class="bg-purple-100 p-4 rounded border border-purple-300 space-y-2">
                     <h3 class="font-bold text-purple-900 mb-2">Chaos Key Trigger</h3>
-                    <p class="text-xs text-purple-700 mb-2">If this word is typed anywhere, a fullscreen meme appears.</p>
                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label class="block font-semibold text-sm">Secret Keyword</label>
-                            <input type="text" id="set-chaos-keyword" class="w-full p-2 rounded border border-stone-300" placeholder="e.g. idiot">
+                            <input type="text" id="set-chaos-keyword" class="w-full p-2 rounded border border-stone-300">
                         </div>
                     </div>
                     <label class="block font-semibold text-sm mt-2">Meme Image URL</label>
-                    <input type="text" id="set-chaos-img" class="w-full p-2 rounded border border-stone-300" placeholder="Link to the chaotic meme">
+                    <input type="text" id="set-chaos-img" class="w-full p-2 rounded border border-stone-300">
                 </div>
 
                 <div class="bg-stone-200 p-4 rounded space-y-2">
@@ -152,7 +153,7 @@
                     <label class="block font-semibold text-sm">Wrong Answer Audio URL</label>
                     <input type="text" id="set-audio" class="w-full p-2 rounded border border-stone-300">
                 </div>
-                <button id="save-settings" class="w-full bg-amber-900 text-white font-bold py-3 rounded mt-4 hover:bg-amber-800">Save Changes</button>
+                <button id="save-settings" class="w-full bg-amber-900 text-white font-bold py-3 rounded mt-4 hover:bg-amber-800 transition-colors">Save To Cloud Database</button>
             </div>
         </div>
     </div>
@@ -227,13 +228,13 @@
         <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-6 md:p-12 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
             <div class="max-w-4xl mx-auto">
                 
-                <!-- NEW: Village Wanted Board -->
+                <!-- Wanted Board -->
                 <div class="wanted-poster p-8 md:p-12 rounded text-center text-stone-900 mb-16 transform rotate-1">
                     <h2 class="text-5xl md:text-7xl font-bold tracking-widest uppercase mb-4 text-amber-900" style="font-family: 'Times New Roman', serif;">WANTED</h2>
                     <p class="text-xl font-bold tracking-widest border-b-2 border-stone-800 pb-2 mb-6 uppercase">Dead or Alive</p>
                     
                     <div class="w-48 h-48 md:w-64 md:h-64 mx-auto border-4 border-stone-800 mb-6 shadow-md overflow-hidden bg-stone-300">
-                        <img id="display-wanted-img" src="https://placehold.co/400x400/57534e/d6d3d1?text=Mugshot" class="w-full h-full object-cover sepia-[.5]">
+                        <img id="display-wanted-img" src="" class="w-full h-full object-cover sepia-[.5]">
                     </div>
                     
                     <h3 id="display-wanted-name" class="text-3xl font-bold uppercase mb-2"></h3>
@@ -249,7 +250,13 @@
                 </div>
 
                 <!-- Upload Box -->
-                <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans">
+                <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans relative">
+                    
+                    <!-- Loading overlay for Pin button -->
+                    <div id="pin-loading" class="hidden absolute inset-0 bg-stone-800/80 rounded-xl flex items-center justify-center z-10">
+                        <span class="text-amber-500 font-bold animate-pulse">Saving to cloud...</span>
+                    </div>
+
                     <h4 class="text-amber-500 font-bold mb-4 flex items-center gap-2">
                         <span>📌</span> Drop a Memory
                     </h4>
@@ -287,45 +294,19 @@
     </div>
 
     <script>
-        // --- APP STATE ---
-        const settings = {
-            bdayName: "Sister",
-            bdayDate: "June 10, 2026",
-            bdayDesc: "Happy Birthday! We survived another year of chaos. This website isn't just a card—it's our new permanent memory vault.\n\nFrom today onwards, every stupid joke, brilliant trip, and weird late-night conversation belongs here.",
-            
-            // Wanted Board Data
-            wantedName: "The Birthday Girl",
-            wantedCrime: "Consistently ordering food and eating half of mine",
-            wantedBounty: "50,000 Gold Coins",
-            wantedImg: "https://placehold.co/400x400/57534e/d6d3d1?text=Embarrassing+Mugshot",
-            
-            // Chaos Trigger Data
-            chaosKeyword: "idiot",
-            chaosMemeUrl: "https://placehold.co/800x600/ff0000/ffffff?text=YOU+TYPED+THE+SECRET+WORD",
+        // ==========================================
+        // 1. SUPABASE INITIALIZATION
+        // ==========================================
+        const SUPABASE_URL = 'https://gnlxnptlidajevozmxzzi.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdubHhucHRsaWRhamV2b3pteHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzE1MzMsImV4cCI6MjA5NjgwNzUzM30.EbvkzQOc1njoZrX4TI7rSGDZ6xdCm8pXPhTt0IopFjM';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            q1: "What is our ultimate inside joke question 1?",
-            a1: "answer1",
-            q2: "Inside joke question 2?",
-            a2: "answer2",
-            q3: "Inside joke question 3?",
-            a3: "answer3",
-            wrongAudioUrl: "https://www.soundjay.com/buttons/sounds/button-10.mp3",
-            isBypassEnabled: false,
-            currentTheme: "birthday"
-        };
-
-        const memories = [
-            {
-                id: 1,
-                createdAt: new Date().toLocaleDateString(),
-                imageUrl: "https://placehold.co/600x400/8B4513/FDF5E6?text=Wholesome+Memory",
-                caption: "Our first memory in the vault!",
-                vibe: "Wholesome (Sunlit Meadows)"
-            }
-        ];
-
+        // --- GLOBAL STATE ---
+        let settings = {};
+        let memories = [];
         let pendingImagePreview = null;
-        let audioPlayer = new Audio(settings.wrongAudioUrl);
+        let audioPlayer = new Audio();
         let keyBuffer = "";
 
         // --- DOM ELEMENTS ---
@@ -339,60 +320,72 @@
         const errorMsg = document.getElementById('error-msg');
         const memoryFeed = document.getElementById('memory-feed');
         const chaosOverlay = document.getElementById('chaos-overlay');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const pinLoading = document.getElementById('pin-loading');
 
-        // --- THEME LOGIC ---
-        function applyTheme() {
-            if (settings.currentTheme === 'birthday') {
-                appBody.classList.remove('bg-theme-village', 'theme-village');
-                appBody.classList.add('bg-theme-birthday');
-                themeToggleBtn.innerText = "🏮 Switch to Village Theme";
-            } else {
-                appBody.classList.remove('bg-theme-birthday');
-                appBody.classList.add('bg-theme-village', 'theme-village');
-                themeToggleBtn.innerText = "🎊 Switch to Birthday Theme";
-            }
-        }
+        // ==========================================
+        // 2. FETCH DATA FROM CLOUD
+        // ==========================================
+        async function loadDataFromCloud() {
+            try {
+                // Fetch Settings
+                const { data: settingsData, error: settingsError } = await supabase
+                    .from('vault_settings')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
 
-        themeToggleBtn.addEventListener('click', () => {
-            settings.currentTheme = settings.currentTheme === 'birthday' ? 'village' : 'birthday';
-            applyTheme();
-        });
-
-        // --- CHAOS KEYWORD LOGIC ---
-        document.addEventListener('keydown', (e) => {
-            // Ignore if in admin panel to avoid annoying popups while editing
-            if (!adminPanel.classList.contains('hidden') || !passwordPrompt.classList.contains('hidden')) return;
-            
-            // Only listen to alphanumeric keys
-            if (e.key.length === 1) {
-                keyBuffer += e.key.toLowerCase();
-                // Keep buffer at reasonable length
-                if (keyBuffer.length > 20) {
-                    keyBuffer = keyBuffer.slice(-20);
-                }
+                if (settingsError) throw settingsError;
                 
-                const targetWord = settings.chaosKeyword.toLowerCase();
-                if (targetWord && keyBuffer.includes(targetWord)) {
-                    triggerChaosMeme();
-                    keyBuffer = ""; // Reset buffer after triggering
+                if (settingsData) {
+                    settings = {
+                        bdayName: settingsData.bday_name,
+                        bdayDate: settingsData.bday_date,
+                        bdayDesc: settingsData.bday_desc,
+                        wantedName: settingsData.wanted_name,
+                        wantedCrime: settingsData.wanted_crime,
+                        wantedBounty: settingsData.wanted_bounty,
+                        wantedImg: settingsData.wanted_img,
+                        chaosKeyword: settingsData.chaos_keyword,
+                        chaosMemeUrl: settingsData.chaos_meme_url,
+                        q1: settingsData.q1, a1: settingsData.a1,
+                        q2: settingsData.q2, a2: settingsData.a2,
+                        q3: settingsData.q3, a3: settingsData.a3,
+                        wrongAudioUrl: settingsData.wrong_audio_url,
+                        isBypassEnabled: settingsData.is_bypass_enabled,
+                        currentTheme: settingsData.current_theme
+                    };
                 }
-            }
-        });
 
-        function triggerChaosMeme() {
-            document.getElementById('chaos-meme-img').src = settings.chaosMemeUrl;
-            chaosOverlay.classList.remove('hidden');
-            setTimeout(() => chaosOverlay.classList.remove('opacity-0'), 10);
-            
-            // Auto hide after 3.5 seconds
-            setTimeout(() => {
-                chaosOverlay.classList.add('opacity-0');
-                setTimeout(() => chaosOverlay.classList.add('hidden'), 300);
-            }, 3500);
+                // Fetch Memories
+                const { data: memData, error: memError } = await supabase
+                    .from('memories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (memError) throw memError;
+                if (memData) memories = memData;
+
+                // Update UI
+                audioPlayer.src = settings.wrongAudioUrl;
+                applyTheme();
+                updateUIWithSettings();
+                renderMemories();
+
+                // Remove loading screen
+                loadingOverlay.classList.add('opacity-0');
+                setTimeout(() => loadingOverlay.classList.add('hidden'), 500);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("Database connection failed. Please ensure your Supabase URL and Key are correct, and tables are created.");
+            }
         }
 
-        // --- INITIALIZATION ---
-        function initData() {
+        // ==========================================
+        // 3. UPDATE CLOUD & UI
+        // ==========================================
+        function updateUIWithSettings() {
             // Main Text
             document.getElementById('display-name-gate').innerText = settings.bdayName;
             document.getElementById('display-name-card').innerText = settings.bdayName;
@@ -410,19 +403,16 @@
             document.getElementById('display-q2').innerText = settings.q2;
             document.getElementById('display-q3').innerText = settings.q3;
             
-            // Populate Admin Inputs
+            // Admin Panel Inputs
             document.getElementById('set-name').value = settings.bdayName;
             document.getElementById('set-date').value = settings.bdayDate;
             document.getElementById('set-desc').value = settings.bdayDesc;
-            
             document.getElementById('set-wanted-name').value = settings.wantedName;
             document.getElementById('set-wanted-crime').value = settings.wantedCrime;
             document.getElementById('set-wanted-bounty').value = settings.wantedBounty;
             document.getElementById('set-wanted-img').value = settings.wantedImg;
-
             document.getElementById('set-chaos-keyword').value = settings.chaosKeyword;
             document.getElementById('set-chaos-img').value = settings.chaosMemeUrl;
-
             document.getElementById('set-q1').value = settings.q1;
             document.getElementById('set-a1').value = settings.a1;
             document.getElementById('set-q2').value = settings.q2;
@@ -439,20 +429,73 @@
                 if (memory.vibe.includes('Chaotic')) badgeClass = 'bg-red-100 text-red-800 border-red-200';
                 if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800 border-purple-200';
                 
+                // Format Date safely
+                let dateStr = "Unknown Date";
+                if(memory.created_at) {
+                    dateStr = new Date(memory.created_at).toLocaleDateString();
+                }
+
                 return `
                 <div class="bg-[#fdf5e6] p-4 pb-12 shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform hover:scale-105 transition-transform duration-300 relative group rotate-1 hover:rotate-0 border border-stone-300">
                     <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow-sm z-10 border-2 border-red-900/50"></div>
                     <div class="aspect-square bg-stone-200 mb-4 overflow-hidden border border-stone-300">
-                        <img src="${memory.imageUrl}" class="w-full h-full object-cover" />
+                        <img src="${memory.image_url}" class="w-full h-full object-cover" />
                     </div>
                     <p class="text-stone-800 font-serif text-lg leading-snug mb-4">${memory.caption}</p>
                     <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs font-sans font-bold">
-                        <span class="text-stone-500">${memory.createdAt}</span>
+                        <span class="text-stone-500">${dateStr}</span>
                         <span class="px-2 py-1 rounded-full border ${badgeClass}">${memory.vibe.split(' ')[0]}</span>
                     </div>
                 </div>
                 `;
             }).join('');
+        }
+
+        // --- THEME LOGIC ---
+        function applyTheme() {
+            if (settings.currentTheme === 'birthday') {
+                appBody.classList.remove('bg-theme-village', 'theme-village');
+                appBody.classList.add('bg-theme-birthday');
+                themeToggleBtn.innerText = "🏮 Switch to Village Theme";
+            } else {
+                appBody.classList.remove('bg-theme-birthday');
+                appBody.classList.add('bg-theme-village', 'theme-village');
+                themeToggleBtn.innerText = "🎊 Switch to Birthday Theme";
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', async () => {
+            const newTheme = settings.currentTheme === 'birthday' ? 'village' : 'birthday';
+            settings.currentTheme = newTheme;
+            applyTheme();
+            
+            // Save theme toggle to cloud silently
+            await supabase.from('vault_settings').update({ current_theme: newTheme }).eq('id', 1);
+        });
+
+        // --- CHAOS KEYWORD LOGIC ---
+        document.addEventListener('keydown', (e) => {
+            if (!adminPanel.classList.contains('hidden') || !passwordPrompt.classList.contains('hidden')) return;
+            if (e.key.length === 1) {
+                keyBuffer += e.key.toLowerCase();
+                if (keyBuffer.length > 20) keyBuffer = keyBuffer.slice(-20);
+                
+                const targetWord = settings.chaosKeyword ? settings.chaosKeyword.toLowerCase() : null;
+                if (targetWord && keyBuffer.includes(targetWord)) {
+                    triggerChaosMeme();
+                    keyBuffer = ""; 
+                }
+            }
+        });
+
+        function triggerChaosMeme() {
+            document.getElementById('chaos-meme-img').src = settings.chaosMemeUrl;
+            chaosOverlay.classList.remove('hidden');
+            setTimeout(() => chaosOverlay.classList.remove('opacity-0'), 10);
+            setTimeout(() => {
+                chaosOverlay.classList.add('opacity-0');
+                setTimeout(() => chaosOverlay.classList.add('hidden'), 300);
+            }, 3500);
         }
 
         // --- GATE LOGIC ---
@@ -501,8 +544,7 @@
         });
 
         document.getElementById('submit-password').addEventListener('click', () => {
-            const pwd = document.getElementById('master-password').value;
-            if (pwd === "Bittu2006+") {
+            if (document.getElementById('master-password').value === "Bittu2006+") {
                 passwordPrompt.classList.add('hidden');
                 adminPanel.classList.remove('hidden');
                 document.getElementById('master-password').value = '';
@@ -515,31 +557,45 @@
             adminPanel.classList.add('hidden');
         });
 
-        document.getElementById('save-settings').addEventListener('click', () => {
-            settings.bdayName = document.getElementById('set-name').value;
-            settings.bdayDate = document.getElementById('set-date').value;
-            settings.bdayDesc = document.getElementById('set-desc').value;
-            
-            settings.wantedName = document.getElementById('set-wanted-name').value;
-            settings.wantedCrime = document.getElementById('set-wanted-crime').value;
-            settings.wantedBounty = document.getElementById('set-wanted-bounty').value;
-            settings.wantedImg = document.getElementById('set-wanted-img').value;
+        // SAVE TO SUPABASE
+        document.getElementById('save-settings').addEventListener('click', async () => {
+            const btn = document.getElementById('save-settings');
+            btn.innerText = "Saving to Cloud...";
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            settings.chaosKeyword = document.getElementById('set-chaos-keyword').value;
-            settings.chaosMemeUrl = document.getElementById('set-chaos-img').value;
+            const payload = {
+                bday_name: document.getElementById('set-name').value,
+                bday_date: document.getElementById('set-date').value,
+                bday_desc: document.getElementById('set-desc').value,
+                wanted_name: document.getElementById('set-wanted-name').value,
+                wanted_crime: document.getElementById('set-wanted-crime').value,
+                wanted_bounty: document.getElementById('set-wanted-bounty').value,
+                wanted_img: document.getElementById('set-wanted-img').value,
+                chaos_keyword: document.getElementById('set-chaos-keyword').value,
+                chaos_meme_url: document.getElementById('set-chaos-img').value,
+                q1: document.getElementById('set-q1').value,
+                a1: document.getElementById('set-a1').value,
+                q2: document.getElementById('set-q2').value,
+                a2: document.getElementById('set-a2').value,
+                q3: document.getElementById('set-q3').value,
+                a3: document.getElementById('set-a3').value,
+                wrong_audio_url: document.getElementById('set-audio').value,
+                is_bypass_enabled: document.getElementById('setting-bypass').checked
+            };
 
-            settings.q1 = document.getElementById('set-q1').value;
-            settings.a1 = document.getElementById('set-a1').value;
-            settings.q2 = document.getElementById('set-q2').value;
-            settings.a2 = document.getElementById('set-a2').value;
-            settings.q3 = document.getElementById('set-q3').value;
-            settings.a3 = document.getElementById('set-a3').value;
-            settings.wrongAudioUrl = document.getElementById('set-audio').value;
-            settings.isBypassEnabled = document.getElementById('setting-bypass').checked;
+            const { error } = await supabase.from('vault_settings').update(payload).eq('id', 1);
 
-            audioPlayer.src = settings.wrongAudioUrl;
-            initData();
-            adminPanel.classList.add('hidden');
+            if (error) {
+                console.error(error);
+                alert("Failed to save changes. Check console.");
+            } else {
+                // Refresh local data
+                await loadDataFromCloud();
+                adminPanel.classList.add('hidden');
+            }
+
+            btn.innerText = "Save To Cloud Database";
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
         });
 
         // --- MEMORY UPLOAD LOGIC ---
@@ -552,33 +608,44 @@
             }
         });
 
-        document.getElementById('pin-btn').addEventListener('click', () => {
+        document.getElementById('pin-btn').addEventListener('click', async () => {
             const caption = document.getElementById('upload-caption').value;
             const vibe = document.getElementById('upload-vibe').value;
 
             if (!pendingImagePreview && !caption.trim()) return;
 
+            pinLoading.classList.remove('hidden');
+
             const newMemory = {
-                id: Date.now(),
-                createdAt: new Date().toLocaleDateString(),
-                imageUrl: pendingImagePreview || "https://placehold.co/600x400/292524/FDF5E6?text=Text+Entry",
+                image_url: pendingImagePreview || "https://placehold.co/600x400/292524/FDF5E6?text=Text+Entry",
                 caption: caption,
                 vibe: vibe
             };
 
-            memories.unshift(newMemory);
-            renderMemories();
+            const { data, error } = await supabase.from('memories').insert([newMemory]).select();
 
-            pendingImagePreview = null;
-            document.getElementById('upload-image').value = '';
-            document.getElementById('upload-caption').value = '';
-            document.getElementById('upload-vibe').selectedIndex = 0;
+            if (error) {
+                console.error(error);
+                alert("Failed to upload memory.");
+            } else {
+                // Add to top of local array and re-render
+                if(data && data.length > 0) memories.unshift(data[0]);
+                renderMemories();
+
+                // Reset form
+                pendingImagePreview = null;
+                document.getElementById('upload-image').value = '';
+                document.getElementById('upload-caption').value = '';
+                document.getElementById('upload-vibe').selectedIndex = 0;
+            }
+
+            pinLoading.classList.add('hidden');
         });
 
-        // Start
-        applyTheme();
-        initData();
-        renderMemories();
+        // ==========================================
+        // 4. START APPLICATION
+        // ==========================================
+        loadDataFromCloud();
 
     </script>
 </body>
