@@ -37,7 +37,7 @@
             box-shadow: inset 0 0 40px rgba(139,69,19,0.5), 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* Glitch Animation for Steganography */
+        /* Glitch Animation */
         @keyframes glitch-anim {
             0% { filter: hue-rotate(0deg) contrast(1); transform: translate(0); }
             20% { filter: hue-rotate(90deg) contrast(2) invert(1); transform: translate(-5px, 5px); }
@@ -48,14 +48,14 @@
         }
         .glitch { animation: glitch-anim 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 
-        /* Anime Sequence Animations */
+        /* Anime Sequence Animations (Fixed for sizing) */
         @keyframes anime-flash {
             0% { background-color: white; opacity: 1; }
             50% { background-color: red; opacity: 0.8; }
             100% { background-color: transparent; opacity: 1; }
         }
         @keyframes anime-zoom {
-            0% { transform: scale(1.5) rotate(-5deg); filter: contrast(1.5) saturate(1.2); }
+            0% { transform: scale(1.1) rotate(-2deg); filter: contrast(1.2) saturate(1.2); }
             100% { transform: scale(1) rotate(0deg); filter: contrast(1) saturate(1); }
         }
         @keyframes anime-text-slide {
@@ -67,6 +67,10 @@
         .anime-slide-active { animation: anime-zoom 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
         .anime-flash-active { animation: anime-flash 0.3s ease-out; }
         .anime-text-active { animation: anime-text-slide 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+        
+        /* Hide scrollbar in lightbox */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body id="app-body" class="min-h-screen font-serif bg-theme-birthday text-stone-100 overflow-x-hidden selection:bg-amber-900 selection:text-white">
@@ -76,12 +80,51 @@
         <p class="font-serif text-amber-500 text-xl animate-pulse">Unsealing the Vault...</p>
     </div>
 
-    <!-- Anime Sequence Overlay -->
+    <div id="lightbox-overlay" class="hidden fixed inset-0 z-[999999] bg-black/95 flex flex-col items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+        <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white text-5xl hover:text-amber-500 transition-colors z-50">&times;</button>
+        <img id="lightbox-img" class="max-w-full max-h-[75vh] object-contain shadow-[0_0_50px_rgba(0,0,0,0.8)] border-4 border-stone-800 rounded">
+        <p id="lightbox-caption" class="text-stone-300 font-serif mt-6 text-xl text-center max-w-3xl leading-relaxed px-4"></p>
+    </div>
+
+    <div id="edit-modal" class="hidden fixed inset-0 z-[999998] bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-stone-800 border border-stone-600 p-6 rounded-xl shadow-2xl w-full max-w-lg font-sans relative max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-stone-400 hover:text-white text-2xl">&times;</button>
+            <h4 class="text-amber-500 font-bold mb-4 text-xl">✏️ Edit Memory</h4>
+            
+            <div id="edit-loading" class="hidden absolute inset-0 bg-stone-900/90 rounded-xl flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-2"></div>
+                <span class="text-amber-500 font-bold tracking-widest">SAVING CHANGES...</span>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-stone-900/50 p-3 rounded border border-stone-700">
+                    <label class="block text-xs font-bold text-amber-600 uppercase mb-2">Replace Real Memory (Optional)</label>
+                    <input type="file" id="edit-image" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-amber-900 file:text-white">
+                </div>
+                <div class="bg-stone-900/50 p-3 rounded border border-stone-700">
+                    <label class="block text-xs font-bold text-purple-400 uppercase mb-2">Replace Cover Photo (Optional)</label>
+                    <input type="file" id="edit-cover" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-purple-900 file:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Edit Vibe</label>
+                    <input type="text" id="edit-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-2 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Edit Caption</label>
+                    <textarea id="edit-caption" class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-3 focus:outline-none focus:border-amber-500 resize-none h-24"></textarea>
+                </div>
+                <button id="save-edit-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-8 py-3 rounded font-black shadow-md transition-colors w-full uppercase tracking-wide">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="anime-sequence-overlay" class="hidden fixed inset-0 z-[99999] bg-black flex items-center justify-center overflow-hidden">
         <div id="anime-flash-layer" class="absolute inset-0 z-10 pointer-events-none"></div>
-        <img id="anime-img" src="" class="absolute inset-0 w-full h-full object-cover opacity-0">
-        <div class="absolute inset-0 z-20 flex items-center justify-center bg-black/30">
-            <h1 id="anime-text" class="text-6xl md:text-9xl font-black text-white uppercase tracking-tighter text-center italic opacity-0 drop-shadow-[5px_5px_0_red]"></h1>
+        <img id="anime-img" src="" class="absolute inset-0 w-full h-full object-contain p-4 md:p-12 opacity-0 drop-shadow-[0_0_30px_rgba(0,0,0,1)]">
+        <div class="absolute inset-0 z-20 flex items-center justify-center bg-black/30 pointer-events-none">
+            <h1 id="anime-text" class="text-6xl md:text-9xl font-black text-white uppercase tracking-tighter text-center italic opacity-0 drop-shadow-[5px_5px_0_red] px-4 leading-tight"></h1>
         </div>
         <button onclick="stopAnimeSequence()" class="absolute top-6 right-6 z-30 text-white/50 hover:text-white font-sans font-bold text-xl uppercase tracking-widest bg-black/50 px-4 py-2 rounded">Skip Sequence ⏭️</button>
     </div>
@@ -93,7 +136,6 @@
         </div>
     </div>
 
-    <!-- UI Controls -->
     <div class="fixed top-4 right-4 z-40 flex flex-col gap-2 items-end">
         <button id="theme-toggle" class="bg-stone-100/20 hover:bg-stone-100/40 backdrop-blur border border-stone-100/30 text-white px-4 py-2 rounded-full font-sans text-sm font-bold transition-all shadow-lg">
             🏮 Switch to Village Theme
@@ -118,7 +160,6 @@
         </div>
     </div>
 
-    <!-- Admin Panel -->
     <div id="admin-panel" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div class="bg-stone-100 p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto text-stone-800 font-sans shadow-2xl border-4 border-amber-900/20">
             <div class="flex justify-between items-center mb-6 border-b-2 border-stone-300 pb-2">
@@ -127,16 +168,20 @@
             </div>
             
             <div class="space-y-6">
-                <!-- Global Settings -->
                 <div class="bg-stone-200 p-4 rounded space-y-3">
                     <div class="flex items-center justify-between border-b border-stone-300 pb-2">
                         <span class="font-semibold text-amber-900">Emergency Bypass Lock</span>
                         <input type="checkbox" id="setting-bypass" class="w-6 h-6">
                     </div>
                     <div>
-                        <label class="block font-semibold text-sm text-amber-900 mb-1">Background Music (MP3/WAV)</label>
+                        <label class="block font-semibold text-sm text-amber-900 mb-1">Birthday Theme BGM (MP3/WAV)</label>
                         <input type="file" id="set-bgm-file" accept="audio/*" class="w-full text-sm">
                         <p id="current-bgm-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sm text-amber-900 mb-1">Village Theme BGM (MP3/WAV)</label>
+                        <input type="file" id="set-bgm-village-file" accept="audio/*" class="w-full text-sm">
+                        <p id="current-bgm-village-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
                     </div>
                     <div>
                         <label class="block font-semibold text-sm text-amber-900 mb-1">Wrong Answer Audio (MP3/WAV)</label>
@@ -203,7 +248,6 @@
         </div>
     </div>
 
-    <!-- GATE SCREEN -->
     <div id="gate-screen" class="relative transition-all duration-[1500ms] ease-in-out opacity-100 min-h-screen flex items-center justify-center p-4 z-10">
         <div class="absolute top-0 left-0 w-full flex justify-between p-4 opacity-70 pointer-events-none">
             <span id="gate-icon-1" class="text-4xl animate-pulse">✨</span>
@@ -246,7 +290,6 @@
         </div>
     </div>
 
-    <!-- VAULT SCREEN -->
     <div id="vault-screen" class="transition-opacity duration-1000 opacity-0 hidden relative z-10">
         <section class="min-h-screen flex flex-col items-center justify-center p-6 relative">
             <div class="confetti-layer absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSIyIiBmaWxsPSIjRkZEMzAwIiBvcGFjaXR5PSIwLjUiLz48Y2lyY2xlIGN4PSIyNTAiIGN4PSIyNTAiIHI9IjMiIGZpbGw9IiNGRjU3MzMiIG9wYWNpdHk9IjAuNiIvPjwvc3ZnPg==')] opacity-50 pointer-events-none"></div>
@@ -271,7 +314,6 @@
         <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-6 md:p-12 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
             <div class="max-w-4xl mx-auto">
                 
-                <!-- Wanted Board -->
                 <div class="wanted-poster p-8 md:p-12 rounded text-center text-stone-900 mb-16 transform rotate-1">
                     <h2 class="text-5xl md:text-7xl font-bold tracking-widest uppercase mb-4 text-amber-900" style="font-family: 'Times New Roman', serif;">WANTED</h2>
                     <p class="text-xl font-bold tracking-widest border-b-2 border-stone-800 pb-2 mb-6 uppercase">Dead or Alive</p>
@@ -288,10 +330,9 @@
 
                 <div class="text-center mb-12 border-t border-stone-600 pt-12">
                     <h3 class="text-3xl font-bold text-[#fdf5e6] mb-2 font-serif">The Public Notice Board</h3>
-                    <p class="text-stone-300 font-sans text-sm mt-2">Double-click suspicious photos to reveal the truth. Press ▶️ on polaroids to hear the Director's Cut.</p>
+                    <p class="text-stone-300 font-sans text-sm mt-2">Double-click suspicious photos to reveal the truth. Click 🔍 to enlarge. Press ▶️ on polaroids to hear the Director's Cut.</p>
                 </div>
 
-                <!-- Memory Uploader -->
                 <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans relative">
                     <div id="pin-loading" class="hidden absolute inset-0 bg-stone-900/90 rounded-xl flex flex-col items-center justify-center z-10 backdrop-blur-sm">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-2"></div>
@@ -358,6 +399,7 @@
         // --- GLOBAL STATE ---
         let settings = {};
         let memories = [];
+        let editingMemoryId = null;
         
         let wrongAudioPlayer = new Audio();
         let bgmPlayer = new Audio();
@@ -414,7 +456,7 @@
                         wantedName: settingsData.wanted_name, wantedCrime: settingsData.wanted_crime, wantedBounty: settingsData.wanted_bounty, wantedImg: settingsData.wanted_img,
                         chaosKeyword: settingsData.chaos_keyword, chaosMemeUrl: settingsData.chaos_meme_url,
                         q1: settingsData.q1, a1: settingsData.a1, q2: settingsData.q2, a2: settingsData.a2, q3: settingsData.q3, a3: settingsData.a3,
-                        wrongAudioUrl: settingsData.wrong_audio_url, bgmUrl: settingsData.bgm_url,
+                        wrongAudioUrl: settingsData.wrong_audio_url, bgmUrl: settingsData.bgm_url, bgmVillageUrl: settingsData.bgm_village_url,
                         isBypassEnabled: settingsData.is_bypass_enabled, currentTheme: settingsData.current_theme
                     };
                 }
@@ -423,10 +465,12 @@
                 if (memError) throw memError;
                 if (memData) memories = memData;
 
-                // Apply Audio sources
                 wrongAudioPlayer.src = settings.wrongAudioUrl || "";
-                bgmPlayer.src = settings.bgmUrl || "";
-                if (settings.bgmUrl) document.getElementById('bgm-toggle').classList.remove('hidden');
+                
+                // Set initial BGM
+                const initialBgm = settings.currentTheme === 'birthday' ? settings.bgmUrl : settings.bgmVillageUrl;
+                bgmPlayer.src = initialBgm || "";
+                if (settings.bgmUrl || settings.bgmVillageUrl) document.getElementById('bgm-toggle').classList.remove('hidden');
 
                 applyTheme();
                 updateUIWithSettings();
@@ -441,7 +485,7 @@
         }
 
         // ==========================================
-        // 4. UI RENDERERS
+        // 4. UI RENDERERS & MODALS
         // ==========================================
         function updateUIWithSettings() {
             document.getElementById('display-name-gate').innerText = settings.bdayName;
@@ -472,13 +516,33 @@
             document.getElementById('set-q3').value = settings.q3; document.getElementById('set-a3').value = settings.a3;
             document.getElementById('setting-bypass').checked = settings.isBypassEnabled;
 
-            // File status texts
-            document.getElementById('current-bgm-status').innerText = settings.bgmUrl ? "✓ Background Music Linked" : "";
-            document.getElementById('current-wrong-audio-status').innerText = settings.wrongAudioUrl ? "✓ Audio Linked" : "";
-            document.getElementById('current-wanted-status').innerText = settings.wantedImg ? "✓ Image Linked" : "";
-            document.getElementById('current-chaos-status').innerText = settings.chaosMemeUrl ? "✓ Meme Linked" : "";
+            document.getElementById('current-bgm-status').innerText = settings.bgmUrl ? "✓ Linked" : "";
+            document.getElementById('current-bgm-village-status').innerText = settings.bgmVillageUrl ? "✓ Linked" : "";
+            document.getElementById('current-wrong-audio-status').innerText = settings.wrongAudioUrl ? "✓ Linked" : "";
+            document.getElementById('current-wanted-status').innerText = settings.wantedImg ? "✓ Linked" : "";
+            document.getElementById('current-chaos-status').innerText = settings.chaosMemeUrl ? "✓ Linked" : "";
         }
 
+        // LIGHTBOX
+        window.openLightbox = function(id) {
+            const mem = memories.find(m => m.id === id);
+            if(!mem) return;
+            const displayUrl = mem.cover_image_url ? mem.cover_image_url : mem.image_url; // Shows cover if it exists, otherwise real image
+            
+            document.getElementById('lightbox-img').src = displayUrl;
+            document.getElementById('lightbox-caption').innerText = mem.caption;
+            const lb = document.getElementById('lightbox-overlay');
+            lb.classList.remove('hidden');
+            setTimeout(() => lb.classList.remove('opacity-0'), 10);
+        };
+
+        window.closeLightbox = function() {
+            const lb = document.getElementById('lightbox-overlay');
+            lb.classList.add('opacity-0');
+            setTimeout(() => lb.classList.add('hidden'), 300);
+        };
+
+        // STEGANOGRAPHY DECODE
         window.decodeMemory = function(id, realUrl, element) {
             const imgEl = element.querySelector('img');
             const hint = element.querySelector('.steg-hint');
@@ -492,6 +556,52 @@
             }
         };
 
+        // EDIT MODAL
+        window.openEditModal = function(id) {
+            editingMemoryId = id;
+            const mem = memories.find(m => m.id === id);
+            document.getElementById('edit-caption').value = mem.caption;
+            document.getElementById('edit-vibe').value = mem.vibe;
+            document.getElementById('edit-image').value = "";
+            document.getElementById('edit-cover').value = "";
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function() {
+            editingMemoryId = null;
+            document.getElementById('edit-modal').classList.add('hidden');
+        };
+
+        document.getElementById('save-edit-btn').addEventListener('click', async () => {
+            if(!editingMemoryId) return;
+            const loader = document.getElementById('edit-loading');
+            loader.classList.remove('hidden');
+
+            try {
+                const mem = memories.find(m => m.id === editingMemoryId);
+                const newCaption = document.getElementById('edit-caption').value;
+                const newVibe = document.getElementById('edit-vibe').value;
+                
+                const newMainUrl = await uploadFileToStorage('edit-image', 'memories') || mem.image_url;
+                const newCoverUrl = await uploadFileToStorage('edit-cover', 'memories') || mem.cover_image_url;
+
+                const payload = { caption: newCaption, vibe: newVibe, image_url: newMainUrl, cover_image_url: newCoverUrl };
+                
+                const { error } = await supabaseClient.from('memories').update(payload).eq('id', editingMemoryId);
+                if (error) throw error;
+
+                // Update local array
+                mem.caption = newCaption; mem.vibe = newVibe; mem.image_url = newMainUrl; mem.cover_image_url = newCoverUrl;
+                renderMemories();
+                closeEditModal();
+            } catch(e) {
+                console.error(e);
+                alert("Failed to save edits.");
+            }
+            loader.classList.add('hidden');
+        });
+
+        // DELETE
         window.deleteMemory = async function(id) {
             if (!confirm("Delete this memory forever?")) return;
             memories = memories.filter(m => m.id !== id);
@@ -499,6 +609,7 @@
             await supabaseClient.from('memories').delete().eq('id', id);
         };
 
+        // AUDIO
         window.playMemoryAudio = function(url) {
             const player = new Audio(url);
             player.play().catch(e => alert("Audio playback blocked."));
@@ -512,24 +623,30 @@
                 if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800 border-purple-200';
                 let dateStr = memory.created_at ? new Date(memory.created_at).toLocaleDateString() : "";
 
-                // Steganography Logic
                 const isSteg = !!memory.cover_image_url;
                 const displayUrl = isSteg ? memory.cover_image_url : memory.image_url;
                 const onClickLogic = isSteg ? `ondblclick="decodeMemory(${memory.id}, '${memory.image_url}', this)"` : "";
                 const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Double-click to Decode 👁️</span></div>` : "";
 
-                // Audio Logic
-                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow-md z-20 transition-transform hover:scale-110" title="Play Director's Cut">▶️</button>` : "";
+                const audioHTML = memory.audio_url ? `<button onclick="event.stopPropagation(); playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow-md z-20 transition-transform hover:scale-110" title="Play Director's Cut">▶️</button>` : "";
 
                 return `
                 <div class="bg-[#fdf5e6] p-4 pb-12 shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform hover:scale-105 transition-transform duration-300 relative rotate-1 hover:rotate-0 border border-stone-300 group cursor-pointer" ${onClickLogic}>
-                    <button onclick="deleteMemory(${memory.id})" class="absolute top-2 right-2 bg-red-600/80 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md z-20 transition-all opacity-0 group-hover:opacity-100">🗑️</button>
+                    
+                    <div class="absolute top-2 right-2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="event.stopPropagation(); openEditModal(${memory.id})" class="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md" title="Edit Memory">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteMemory(${memory.id})" class="bg-red-600/80 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md" title="Delete Memory">🗑️</button>
+                    </div>
+
                     ${audioHTML}
                     <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow-sm z-10 border-2 border-red-900/50"></div>
+                    
                     <div class="aspect-square bg-stone-200 mb-4 overflow-hidden border border-stone-300 relative">
                         <img src="${displayUrl}" class="w-full h-full object-cover transition-all duration-300" />
                         ${hintHTML}
+                        <button onclick="event.stopPropagation(); openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 hover:bg-black/90 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm" title="View Fullscreen">🔍</button>
                     </div>
+                    
                     <p class="text-stone-800 font-serif text-lg leading-snug mb-4">${memory.caption}</p>
                     <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs font-sans font-bold">
                         <span class="text-stone-500">${dateStr}</span>
@@ -556,9 +673,7 @@
                     recordBtn.classList.replace('bg-red-900/80', 'bg-red-500');
                     recordBtn.classList.add('animate-pulse');
 
-                    mediaRecorder.addEventListener("dataavailable", event => {
-                        audioChunks.push(event.data);
-                    });
+                    mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
 
                     mediaRecorder.addEventListener("stop", () => {
                         audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -567,7 +682,6 @@
                         preview.src = audioUrl;
                         preview.classList.remove('hidden');
                         
-                        // Stop all tracks to release mic
                         stream.getTracks().forEach(track => track.stop());
                         recordBtn.innerText = "🎤 Re-Record";
                         recordBtn.classList.replace('bg-red-500', 'bg-red-900/80');
@@ -576,13 +690,28 @@
                 } catch (err) {
                     alert("Microphone access denied or unavailable.");
                 }
-            } else {
-                mediaRecorder.stop();
-            }
+            } else { mediaRecorder.stop(); }
         });
 
-        // BGM TOGGLE
+        // DYNAMIC THEME BGM LOGIC
         const bgmBtn = document.getElementById('bgm-toggle');
+        
+        function updateBGM(isThemeChange = false) {
+            const targetSrc = settings.currentTheme === 'birthday' ? settings.bgmUrl : settings.bgmVillageUrl;
+            const isCurrentlyPlaying = !bgmPlayer.paused && bgmPlayer.currentTime > 0;
+
+            if (bgmPlayer.src !== targetSrc) {
+                bgmPlayer.src = targetSrc || "";
+                if (isCurrentlyPlaying && targetSrc) {
+                    bgmPlayer.play().catch(e=>console.log("Autoplay prevented"));
+                } else if (isCurrentlyPlaying && !targetSrc) {
+                    bgmPlayer.pause();
+                    bgmBtn.innerText = "🎵 Play Background Music";
+                    bgmBtn.classList.replace('text-stone-100', 'text-amber-500');
+                }
+            }
+        }
+
         bgmBtn.addEventListener('click', () => {
             if(bgmPlayer.paused) {
                 bgmPlayer.play();
@@ -612,7 +741,9 @@
                 themeToggleBtn.innerText = "🎊 Switch to Birthday Theme";
                 elements.forEach(id => { const el = document.getElementById(id); if(el) el.innerText = "🐍"; });
             }
+            updateBGM(true);
         }
+
         themeToggleBtn.addEventListener('click', async () => {
             settings.currentTheme = settings.currentTheme === 'birthday' ? 'village' : 'birthday';
             applyTheme();
@@ -621,7 +752,7 @@
 
         // CHAOS KEYWORD
         document.addEventListener('keydown', (e) => {
-            if (!document.getElementById('admin-panel').classList.contains('hidden') || !document.getElementById('password-prompt').classList.contains('hidden')) return;
+            if (!document.getElementById('admin-panel').classList.contains('hidden') || !document.getElementById('password-prompt').classList.contains('hidden') || !document.getElementById('edit-modal').classList.contains('hidden')) return;
             if (e.key.length === 1) {
                 keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-20);
                 const targetWord = settings.chaosKeyword ? settings.chaosKeyword.toLowerCase() : null;
@@ -653,10 +784,15 @@
             slideIndex = 0;
             
             animeOverlay.classList.remove('hidden');
-            if(bgmPlayer.paused && settings.bgmUrl) { bgmPlayer.currentTime = 0; bgmPlayer.play(); }
+            if(bgmPlayer.paused && (settings.bgmUrl || settings.bgmVillageUrl)) { 
+                bgmPlayer.currentTime = 0; 
+                bgmPlayer.play().catch(e=>console.log(e));
+                bgmBtn.innerText = "🔇 Pause Background Music";
+                bgmBtn.classList.replace('text-amber-500', 'text-stone-100');
+            }
             
             runAnimeSlide();
-            animeInterval = setInterval(runAnimeSlide, 1500); // Fast cuts every 1.5s
+            animeInterval = setInterval(runAnimeSlide, 1500);
         };
 
         window.stopAnimeSequence = function() {
@@ -667,22 +803,19 @@
         };
 
         function runAnimeSlide() {
-            if(slideIndex >= shuffledMems.length || slideIndex > 15) return stopAnimeSequence(); // Max 15 slides
+            if(slideIndex >= shuffledMems.length || slideIndex > 15) return stopAnimeSequence(); 
             const mem = shuffledMems[slideIndex];
             
-            // Flash effect
             animeFlash.classList.remove('anime-flash-active');
-            void animeFlash.offsetWidth; // trigger reflow
+            void animeFlash.offsetWidth; 
             animeFlash.classList.add('anime-flash-active');
 
-            // Image Zoom effect
             animeImg.src = mem.image_url;
             animeImg.classList.remove('anime-slide-active');
             animeImg.style.opacity = 1;
             void animeImg.offsetWidth;
             animeImg.classList.add('anime-slide-active');
 
-            // Text Slide effect
             const shortCaption = mem.caption.split('.')[0] || "CHAOS";
             animeText.innerText = shortCaption;
             animeText.classList.remove('anime-text-active');
@@ -750,8 +883,8 @@
             btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                // Upload files if selected, otherwise keep old URLs
                 const bgmUrl = await uploadFileToStorage('set-bgm-file', 'audio') || settings.bgmUrl;
+                const bgmVillageUrl = await uploadFileToStorage('set-bgm-village-file', 'audio') || settings.bgmVillageUrl;
                 const wrongAudioUrl = await uploadFileToStorage('set-audio-file', 'audio') || settings.wrongAudioUrl;
                 const wantedImg = await uploadFileToStorage('set-wanted-file', 'images') || settings.wantedImg;
                 const chaosMemeUrl = await uploadFileToStorage('set-chaos-file', 'images') || settings.chaosMemeUrl;
@@ -771,6 +904,7 @@
                     q3: document.getElementById('set-q3').value, a3: document.getElementById('set-a3').value,
                     wrong_audio_url: wrongAudioUrl,
                     bgm_url: bgmUrl,
+                    bgm_village_url: bgmVillageUrl,
                     is_bypass_enabled: document.getElementById('setting-bypass').checked
                 };
 
@@ -780,8 +914,8 @@
                 await loadDataFromCloud();
                 document.getElementById('admin-panel').classList.add('hidden');
                 
-                // Clear file inputs so we don't re-upload next time
                 document.getElementById('set-bgm-file').value = "";
+                document.getElementById('set-bgm-village-file').value = "";
                 document.getElementById('set-audio-file').value = "";
                 document.getElementById('set-wanted-file').value = "";
                 document.getElementById('set-chaos-file').value = "";
@@ -817,7 +951,6 @@
                 if(data && data.length > 0) memories.unshift(data[0]);
                 renderMemories();
 
-                // Reset
                 mainImgInput.value = '';
                 document.getElementById('upload-cover').value = '';
                 document.getElementById('upload-caption').value = '';
