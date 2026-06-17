@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MAD - The Golden Trio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -42,8 +42,6 @@
         }
 
         .fade-out-scale { transform: scale(1.1); opacity: 0; pointer-events: none; }
-        
-        /* HIDE ELEMENT CLASSES */
         .theme-village .birthday-fx { display: none !important; }
         .theme-birthday .village-fx { display: none !important; }
 
@@ -61,13 +59,14 @@
         }
         .polaroid-card.is-scattered {
             cursor: grab;
+            touch-action: none; /* Stops mobile screen from scrolling when dragging */
         }
         .polaroid-card.is-scattered:active {
             cursor: grabbing;
             box-shadow: 10px 15px 30px rgba(0,0,0,0.6);
         }
 
-        /* WISH LANTERNS (BIRTHDAY) */
+        /* WISH LANTERNS */
         .wish-lantern {
             position: fixed;
             bottom: -100px;
@@ -81,14 +80,9 @@
             pointer-events: none;
             z-index: 1;
         }
-        @keyframes float-up {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.8; }
-            90% { opacity: 0.8; }
-            100% { transform: translateY(-120vh) rotate(20deg); opacity: 0; }
-        }
+        @keyframes float-up { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 0.8; } 90% { opacity: 0.8; } 100% { transform: translateY(-120vh) rotate(20deg); opacity: 0; } }
 
-        /* VILLAGE SNAKE (VILLAGE) */
+        /* VILLAGE SNAKE */
         #village-snake {
             position: fixed;
             width: 80px;
@@ -266,14 +260,14 @@
         </div>
     </div>
 
-    <div id="gate-screen" class="relative transition-all duration-[1500ms] opacity-100 min-h-screen flex items-center justify-center p-4 z-10">
-        <div class="bg-[#fdf5e6] text-stone-800 border-[6px] border-double border-amber-900/30 p-8 md:p-12 max-w-xl w-full rounded-sm shadow-2xl relative z-20">
-            <h1 class="text-3xl md:text-4xl font-bold text-amber-900 mb-2 leading-snug">MAD - The Golden Trio</h1>
-            <h2 class="text-xl md:text-2xl font-semibold mb-6 text-stone-700 border-b-2 border-stone-300 pb-4">
+    <div id="gate-screen" class="relative transition-all duration-[1500ms] opacity-100 min-h-screen flex items-center justify-center p-4 z-10 w-full overflow-hidden">
+        <div class="bg-[#fdf5e6] text-stone-800 border-[6px] border-double border-amber-900/30 p-6 md:p-12 max-w-xl w-full rounded-sm shadow-2xl relative z-20">
+            <h1 class="text-2xl md:text-4xl font-bold text-amber-900 mb-2 leading-snug">MAD - The Golden Trio</h1>
+            <h2 class="text-lg md:text-2xl font-semibold mb-6 text-stone-700 border-b-2 border-stone-300 pb-4">
                 Happy Birthday, <span id="display-name-gate" class="text-amber-600"></span>! <span id="gate-title-icon">🎂</span>
             </h2>
-            <p class="italic text-stone-600 mb-8 font-serif">Solve these 3 insider riddles to open the gates...</p>
-            <div id="error-msg" class="hidden bg-red-100 text-red-800 border-l-4 p-3 mb-6 text-sm font-sans font-medium text-left animate-bounce"></div>
+            <p class="italic text-stone-600 mb-6 font-serif text-sm md:text-base">Solve these 3 insider riddles to open the gates...</p>
+            <div id="error-msg" class="hidden bg-red-100 text-red-800 border-l-4 p-3 mb-6 text-xs md:text-sm font-sans font-medium text-left animate-bounce"></div>
 
             <div class="space-y-6 text-left">
                 <div>
@@ -292,38 +286,38 @@
                     <input type="text" id="ans3" class="w-full bg-transparent border-b-2 border-amber-900/30 outline-none px-2 py-1 text-stone-900 font-sans" placeholder="...">
                 </div>
             </div>
-            <button id="unlock-btn" class="mt-10 bg-amber-900 hover:bg-amber-800 text-[#fdf5e6] px-8 py-3 rounded shadow-lg w-full font-bold text-lg font-sans tracking-wide">🗝️ Unlock Vault</button>
+            <button id="unlock-btn" class="mt-8 bg-amber-900 hover:bg-amber-800 text-[#fdf5e6] px-6 py-3 rounded shadow-lg w-full font-bold text-base md:text-lg font-sans tracking-wide">🗝️ Unlock Vault</button>
         </div>
     </div>
 
-    <div id="vault-screen" class="transition-opacity duration-1000 opacity-0 hidden relative z-10">
-        <section class="min-h-screen flex flex-col items-center justify-center p-6 relative">
-            <div class="max-w-3xl w-full bg-[#fdf5e6] text-stone-800 p-8 md:p-12 rounded-lg shadow-2xl relative z-10 text-center transform -rotate-1 border-8 border-stone-200">
-                <div class="mb-4 text-amber-600 font-sans font-bold tracking-widest uppercase text-sm" id="display-date"></div>
-                <h2 class="text-4xl md:text-5xl font-bold text-amber-900 mb-6">Welcome to the Vault, <span id="display-name-card"></span>! <span id="card-icon">🎉</span></h2>
-                <p id="display-desc" class="text-lg md:text-xl font-serif leading-relaxed text-stone-700 italic whitespace-pre-wrap mb-8"></p>
-                <button onclick="triggerAnimeSequence()" class="bg-red-800 text-white hover:bg-red-700 font-sans font-black uppercase tracking-widest px-8 py-4 rounded-lg shadow-[0_0_20px_rgba(153,27,27,0.5)] transform hover:scale-105 transition-all animate-pulse">▶️ Play The Trio Sequence</button>
+    <div id="vault-screen" class="transition-opacity duration-1000 opacity-0 hidden relative z-10 w-full">
+        <section class="min-h-screen flex flex-col items-center justify-center p-4 relative">
+            <div class="max-w-3xl w-full bg-[#fdf5e6] text-stone-800 p-6 md:p-12 rounded-lg shadow-2xl relative z-10 text-center transform -rotate-1 border-4 md:border-8 border-stone-200">
+                <div class="mb-4 text-amber-600 font-sans font-bold tracking-widest uppercase text-xs md:text-sm" id="display-date"></div>
+                <h2 class="text-3xl md:text-5xl font-bold text-amber-900 mb-6">Welcome, <span id="display-name-card"></span>! <span id="card-icon">🎉</span></h2>
+                <p id="display-desc" class="text-base md:text-xl font-serif leading-relaxed text-stone-700 italic whitespace-pre-wrap mb-8"></p>
+                <button onclick="triggerAnimeSequence()" class="bg-red-800 text-white hover:bg-red-700 font-sans font-black uppercase tracking-widest px-4 md:px-8 py-3 md:py-4 rounded-lg shadow-[0_0_20px_rgba(153,27,27,0.5)] transform hover:scale-105 transition-all animate-pulse text-xs md:text-base">▶️ Play The Trio Sequence</button>
             </div>
-            <div class="mt-16 text-center animate-bounce text-stone-300 font-sans tracking-widest text-sm uppercase font-bold bg-stone-900/40 px-4 py-2 rounded-full backdrop-blur">Scroll down <br>↓</div>
+            <div class="mt-12 text-center animate-bounce text-stone-300 font-sans tracking-widest text-xs md:text-sm uppercase font-bold bg-stone-900/40 px-4 py-2 rounded-full backdrop-blur">Scroll down <br>↓</div>
         </section>
 
-        <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-4 md:p-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] w-full overflow-hidden">
             <div class="max-w-[1200px] mx-auto">
                 
-                <div class="wanted-poster max-w-xl mx-auto p-8 rounded text-center text-stone-900 mb-16 transform rotate-2">
-                    <h2 class="text-5xl md:text-7xl font-bold tracking-widest uppercase mb-4 text-amber-900" style="font-family: 'Times New Roman', serif;">WANTED</h2>
-                    <p class="text-xl font-bold tracking-widest border-b-2 border-stone-800 pb-2 mb-6 uppercase">Dead or Alive</p>
-                    <div class="w-48 h-48 md:w-64 md:h-64 mx-auto border-4 border-stone-800 mb-6 bg-stone-300"><img id="display-wanted-img" src="" class="w-full h-full object-cover sepia-[.5]"></div>
-                    <h3 id="display-wanted-name" class="text-3xl font-bold uppercase mb-2"></h3>
-                    <p class="text-lg font-serif italic mb-4">Wanted for the severe crime of:</p>
-                    <p id="display-wanted-crime" class="text-xl font-bold text-red-800 mb-6"></p>
-                    <p class="text-xl font-bold border-t-2 border-stone-800 pt-4 uppercase">Reward: <span id="display-wanted-bounty" class="text-amber-700"></span></p>
+                <div class="wanted-poster max-w-xl mx-auto p-6 md:p-8 rounded text-center text-stone-900 mb-16 transform rotate-2 shadow-2xl border border-stone-300">
+                    <h2 class="text-4xl md:text-7xl font-bold tracking-widest uppercase mb-4 text-amber-900" style="font-family: 'Times New Roman', serif;">WANTED</h2>
+                    <p class="text-lg md:text-xl font-bold tracking-widest border-b-2 border-stone-800 pb-2 mb-6 uppercase">Dead or Alive</p>
+                    <div class="w-40 h-40 md:w-64 md:h-64 mx-auto border-4 border-stone-800 mb-6 bg-stone-300"><img id="display-wanted-img" src="" class="w-full h-full object-cover sepia-[.5]"></div>
+                    <h3 id="display-wanted-name" class="text-2xl md:text-3xl font-bold uppercase mb-2"></h3>
+                    <p class="text-sm md:text-lg font-serif italic mb-4">Wanted for the severe crime of:</p>
+                    <p id="display-wanted-crime" class="text-lg md:text-xl font-bold text-red-800 mb-6 px-2"></p>
+                    <p class="text-lg md:text-xl font-bold border-t-2 border-stone-800 pt-4 uppercase">Reward: <span id="display-wanted-bounty" class="text-amber-700"></span></p>
                 </div>
 
-                <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans relative max-w-3xl mx-auto">
+                <div class="bg-stone-800/80 border border-stone-600 p-4 md:p-6 rounded-xl shadow-2xl mb-12 font-sans relative max-w-3xl mx-auto">
                     <div id="pin-loading" class="hidden absolute inset-0 bg-stone-900/90 rounded-xl flex flex-col items-center justify-center z-10 backdrop-blur-sm">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-2"></div>
-                        <span class="text-amber-500 font-bold tracking-widest">UPLOADING...</span>
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-amber-500 mb-2"></div>
+                        <span class="text-amber-500 font-bold tracking-widest text-sm">UPLOADING...</span>
                     </div>
 
                     <h4 class="text-amber-500 font-bold mb-4 flex items-center gap-2"><span>📌</span> Drop a Memory</h4>
@@ -331,48 +325,48 @@
                         <div class="flex flex-col md:flex-row gap-4">
                             <div class="flex-1 bg-stone-900/50 p-3 rounded border border-stone-700">
                                 <label class="block text-xs font-bold text-amber-600 uppercase mb-2">1. Real Memory</label>
-                                <input type="file" id="upload-image" accept="image/*" class="w-full text-sm text-stone-300 file:bg-amber-900 file:text-white">
+                                <input type="file" id="upload-image" accept="image/*" class="w-full text-sm text-stone-300 file:bg-amber-900 file:text-white file:border-0 file:rounded file:px-2 file:py-1">
                             </div>
                             <div class="flex-1 bg-stone-900/50 p-3 rounded border border-stone-700">
-                                <label class="block text-xs font-bold text-purple-400 uppercase mb-2">2. Cover Photo (Steg)</label>
-                                <input type="file" id="upload-cover" accept="image/*" class="w-full text-sm text-stone-300 file:bg-purple-900 file:text-white">
+                                <label class="block text-xs font-bold text-purple-400 uppercase mb-2">2. Cover (Steg)</label>
+                                <input type="file" id="upload-cover" accept="image/*" class="w-full text-sm text-stone-300 file:bg-purple-900 file:text-white file:border-0 file:rounded file:px-2 file:py-1">
                             </div>
                         </div>
 
                         <div class="flex flex-col md:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Custom Vibe</label>
-                                <input type="text" id="upload-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 rounded p-2 focus:border-amber-500">
+                                <input type="text" id="upload-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 rounded p-2 focus:border-amber-500 outline-none">
                                 <datalist id="vibe-options"><option value="Wholesome"><option value="Chaotic"><option value="Absolute Disaster"></datalist>
                             </div>
                             <div class="flex-1 flex flex-col justify-end">
                                 <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Director's Cut Audio</label>
                                 <div class="flex gap-2">
-                                    <button id="record-btn" class="bg-red-900/80 hover:bg-red-800 text-white px-4 py-2 rounded text-sm font-bold flex-1">🎤 Record Audio</button>
-                                    <audio id="audio-preview" controls class="hidden w-full h-9"></audio>
+                                    <button id="record-btn" class="bg-red-900/80 hover:bg-red-800 text-white px-4 py-2 rounded text-sm font-bold flex-1 transition-colors">🎤 Record Audio</button>
                                 </div>
+                                <audio id="audio-preview" controls class="hidden w-full h-10 mt-2 rounded"></audio>
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-xs text-stone-400 uppercase tracking-wider mb-2">Caption</label>
-                            <textarea id="upload-caption" class="w-full bg-stone-700 text-stone-100 rounded p-3 h-20"></textarea>
+                            <textarea id="upload-caption" class="w-full bg-stone-700 text-stone-100 rounded p-3 h-20 outline-none focus:border-amber-500"></textarea>
                         </div>
-                        <button id="pin-btn" class="bg-amber-100 hover:bg-white text-stone-900 px-8 py-3 rounded font-black w-full md:w-auto uppercase tracking-wide">Pin to Board</button>
+                        <button id="pin-btn" class="bg-amber-100 hover:bg-white text-stone-900 px-8 py-3 rounded font-black w-full md:w-auto uppercase tracking-wide shadow transition-colors">Pin to Board</button>
                     </div>
                 </div>
 
-                <div class="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 border-t border-stone-600 pt-12 gap-4">
+                <div class="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 border-t border-stone-600 pt-8 gap-4 px-2">
                     <div class="text-center md:text-left">
-                        <h3 class="text-3xl font-bold text-[#fdf5e6] font-serif">The Trio Board</h3>
-                        <p class="text-stone-400 text-sm mt-2 font-sans">Double-click suspicious photos. Click 🔍 to enlarge. Press ▶️ for audio.</p>
+                        <h3 class="text-2xl md:text-3xl font-bold text-[#fdf5e6] font-serif">The Trio Board</h3>
+                        <p class="text-stone-400 text-xs md:text-sm mt-2 font-sans">Double-click suspicious photos. Click 🔍 to enlarge. Press ▶️ for audio.</p>
                     </div>
-                    <button id="scatter-toggle" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                    <button id="scatter-toggle" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] transition-all uppercase tracking-wider text-xs md:text-sm flex items-center gap-2">
                         🌪️ Scatter Memories
                     </button>
                 </div>
 
-                <div id="memory-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative transition-all duration-500 min-h-[400px]"></div>
+                <div id="memory-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 relative transition-all duration-500 min-h-[400px] w-full px-2"></div>
             </div>
         </section>
     </div>
@@ -410,8 +404,10 @@
             return publicUrlData.publicUrl;
         }
 
-        async function uploadBlobToStorage(blob, pathPrefix, extension) {
+        async function uploadBlobToStorage(blob, pathPrefix) {
             if (!blob) return null;
+            // Get proper extension based on the actual created type
+            const extension = blob.type.split('/')[1].split(';')[0] || 'mp4';
             const fileName = `${pathPrefix}/${Date.now()}_audio.${extension}`;
             const file = new File([blob], fileName, { type: blob.type });
             const { data, error } = await supabaseClient.storage.from('vault_files').upload(fileName, file);
@@ -485,7 +481,6 @@
         // ==========================================
         // 4. ANIMATIONS & FX ENGINE
         // ==========================================
-
         function generateLanterns() {
             const container = document.getElementById('lantern-container');
             container.innerHTML = '';
@@ -506,17 +501,20 @@
                 if(settings.currentTheme !== 'village') return;
                 const side = Math.floor(Math.random() * 4);
                 let x, y, rot;
-                if(side === 0) { x = -100; y = Math.random() * window.innerHeight; rot = 0; } // Left
-                else if(side === 1) { x = window.innerWidth + 100; y = Math.random() * window.innerHeight; rot = 180; } // Right
-                else if(side === 2) { x = Math.random() * window.innerWidth; y = -100; rot = 90; } // Top
-                else { x = Math.random() * window.innerWidth; y = window.innerHeight + 100; rot = -90; } // Bottom
+                if(side === 0) { x = -100; y = Math.random() * window.innerHeight; rot = 0; }
+                else if(side === 1) { x = window.innerWidth + 100; y = Math.random() * window.innerHeight; rot = 180; }
+                else if(side === 2) { x = Math.random() * window.innerWidth; y = -100; rot = 90; }
+                else { x = Math.random() * window.innerWidth; y = window.innerHeight + 100; rot = -90; }
                 
                 snake.style.transition = 'none';
                 snake.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
                 
                 setTimeout(() => {
                     snake.style.transition = 'transform 6s linear';
-                    if(side === 0) x += 400; else if(side === 1) x -= 400; else if(side === 2) y += 400; else y -= 400;
+                    if(side === 0) x += window.innerWidth + 200; 
+                    else if(side === 1) x -= window.innerWidth + 200; 
+                    else if(side === 2) y += window.innerHeight + 200; 
+                    else y -= window.innerHeight + 200;
                     snake.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
                 }, 50);
             }, 8000);
@@ -577,9 +575,13 @@
 
                 const isSteg = !!memory.cover_image_url;
                 const displayUrl = isSteg ? memory.cover_image_url : memory.image_url;
-                const onClickLogic = isSteg ? `ondblclick="decodeMemory(${memory.id}, '${memory.image_url}', this)"` : "";
-                const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 pointer-events-none transition"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Dbl-Click Decode</span></div>` : "";
-                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow z-20 hover:scale-110 transition-transform">▶️</button>` : "";
+                
+                // FIXED 2-WAY STEG LOGIC
+                const onClickLogic = isSteg ? `ondblclick="toggleSteg('${memory.image_url}', '${memory.cover_image_url}', this)"` : "";
+                const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 pointer-events-none transition"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Dbl-Click Decode 👁️</span></div>` : "";
+                
+                // AUDIO BUTTON
+                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform">▶️</button>` : "";
 
                 const card = document.createElement('div');
                 card.className = "polaroid-card bg-[#fdf5e6] p-3 pb-10 group w-full max-w-[320px] mx-auto";
@@ -591,21 +593,21 @@
                     </div>
                     ${audioHTML}
                     <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow border-2 border-red-900/50"></div>
-                    <div class="aspect-square bg-stone-200 mb-3 overflow-hidden border border-stone-300 relative" ${onClickLogic}>
-                        <img src="${displayUrl}" class="w-full h-full object-cover" />
+                    <div class="aspect-square bg-stone-200 mb-3 overflow-hidden border border-stone-300 relative select-none" ${onClickLogic}>
+                        <img src="${displayUrl}" class="w-full h-full object-cover transition-all" draggable="false" />
                         ${hintHTML}
                         <button onclick="openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 z-20 hover:bg-black/90">🔍</button>
                     </div>
-                    <p class="text-stone-800 font-serif text-sm leading-snug mb-2">${memory.caption}</p>
-                    <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center text-[10px] font-sans font-bold">
+                    <p class="text-stone-800 font-serif text-sm md:text-base leading-snug mb-2">${memory.caption}</p>
+                    <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center text-[10px] md:text-xs font-sans font-bold">
                         <span class="text-stone-500">${memory.created_at ? new Date(memory.created_at).toLocaleDateString() : ""}</span>
-                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[100px] truncate">${memory.vibe}</span>
+                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[120px] truncate">${memory.vibe}</span>
                     </div>
                 `;
 
-                // Drag Listeners
+                // Drag Listeners (Only active when scattered)
                 card.addEventListener('mousedown', dragStart);
-                card.addEventListener('touchstart', dragStart, {passive: true});
+                card.addEventListener('touchstart', dragStart, {passive: false});
                 feed.appendChild(card);
             });
 
@@ -613,7 +615,7 @@
         }
 
         // ==========================================
-        // SCATTER & DRAG LOGIC
+        // SCATTER & BOUNDARY-SAFE DRAG LOGIC
         // ==========================================
         document.getElementById('scatter-toggle').addEventListener('click', () => {
             isScattered = !isScattered;
@@ -626,27 +628,23 @@
             const btn = document.getElementById('scatter-toggle');
 
             if (isScattered) {
-                btn.innerText = "⏹️ Organize Photos";
-                
-                // Swap container to block for absolute positioning
-                feed.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+                btn.innerHTML = "⏹️ Organize Photos";
+                feed.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6', 'md:gap-8');
                 feed.style.display = 'block';
-                
-                // Ensure the container is tall enough to hold scattered cards
                 feed.style.minHeight = Math.max(800, cards.length * 150) + 'px';
 
                 cards.forEach((card) => {
                     card.classList.add('is-scattered');
-                    
-                    // Only apply random coords if not already absolutely positioned (so we don't reset dragged ones)
                     if(card.style.position !== 'absolute') {
-                        // Max boundaries: feed width minus an assumed card width
-                        const maxX = feed.clientWidth - 300; 
-                        const maxY = feed.clientHeight - 350; 
+                        // Max boundaries: feed width minus actual card width
+                        const maxX = feed.clientWidth - card.offsetWidth; 
+                        const maxY = feed.clientHeight - card.offsetHeight; 
                         
                         const randomX = Math.max(0, Math.random() * (maxX > 0 ? maxX : 50));
                         const randomY = Math.max(0, Math.random() * (maxY > 0 ? maxY : 50));
-                        const randomRot = (Math.random() * 40) - 20;
+                        // Limit rotation on mobile to prevent clipping
+                        const maxRot = window.innerWidth < 768 ? 10 : 25;
+                        const randomRot = (Math.random() * (maxRot * 2)) - maxRot;
 
                         card.style.position = 'absolute';
                         card.style.left = `${randomX}px`;
@@ -656,10 +654,8 @@
                     }
                 });
             } else {
-                btn.innerText = "🌪️ Scatter Memories";
-                
-                // Revert container to CSS Grid
-                feed.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+                btn.innerHTML = "🌪️ Scatter Memories";
+                feed.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6', 'md:gap-8');
                 feed.style.display = '';
                 feed.style.minHeight = '400px';
 
@@ -668,7 +664,6 @@
                     card.style.position = 'relative';
                     card.style.left = '0px';
                     card.style.top = '0px';
-                    // Subtle random rotation for grid view
                     card.style.transform = `rotate(${(Math.random() * 6) - 3}deg)`;
                     card.style.zIndex = 1;
                 });
@@ -678,12 +673,12 @@
         let activeCard = null, startX, startY, initialLeft, initialTop;
         function dragStart(e) {
             if (!isScattered) return;
-            // Prevent dragging if clicking a button or an image (so lightbox/edit works)
+            // Prevent dragging if clicking a button or interactable elements
             if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
             
             activeCard = e.currentTarget;
             activeCard.style.zIndex = ++maxZIndex;
-            activeCard.style.transition = 'none'; // Disable transition so it doesn't lag behind mouse
+            activeCard.style.transition = 'none'; // Instant follow
             
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
             startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
@@ -699,7 +694,8 @@
 
         function drag(e) {
             if (!activeCard || !isScattered) return;
-            e.preventDefault();
+            // Prevent mobile scrolling while dragging
+            if (e.type === 'touchmove') e.preventDefault(); 
             
             const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
             const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
@@ -714,7 +710,7 @@
             let newLeft = initialLeft + dx;
             let newTop = initialTop + dy;
 
-            // Clamp positions to stay inside the borders
+            // Clamp positions precisely
             newLeft = Math.max(0, Math.min(newLeft, maxX));
             newTop = Math.max(0, Math.min(newTop, maxY));
 
@@ -724,7 +720,6 @@
 
         function dragEnd() {
             if (!activeCard) return;
-            // Re-enable transition for smooth toggling later
             activeCard.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), left 0.5s ease, top 0.5s ease, box-shadow 0.2s ease';
             activeCard = null;
             document.removeEventListener('mousemove', drag);
@@ -736,13 +731,24 @@
         // ==========================================
         // 6. UI MODALS & CRUD LOGIC
         // ==========================================
-        window.decodeMemory = function(id, realUrl, element) {
+        
+        // FIXED 2-WAY STEG LOGIC
+        window.toggleSteg = function(realUrl, coverUrl, element) {
             const imgEl = element.querySelector('img');
-            const hint = element.querySelector('.steg-hint');
-            if(imgEl.src !== realUrl) {
-                element.classList.add('glitch');
-                setTimeout(() => { imgEl.src = realUrl; element.classList.remove('glitch'); if(hint) hint.classList.add('hidden'); }, 400);
-            }
+            const hint = element.querySelector('.steg-hint span');
+            
+            element.classList.add('glitch');
+            setTimeout(() => {
+                // If currently showing cover, switch to real
+                if(imgEl.src.includes(encodeURI(coverUrl).replace(/%2F/g, '/')) || imgEl.src === coverUrl) {
+                    imgEl.src = realUrl;
+                    if(hint) hint.innerText = "Dbl-Click to Hide 🙈";
+                } else {
+                    imgEl.src = coverUrl;
+                    if(hint) hint.innerText = "Dbl-Click Decode 👁️";
+                }
+                element.classList.remove('glitch');
+            }, 400);
         };
 
         window.openLightbox = function(id) {
@@ -781,30 +787,41 @@
         window.deleteMemory = async function(id) {
             if (!confirm("Delete this memory forever?")) return;
             memories = memories.filter(m => m.id !== id);
-            renderMemories(); // Refresh feed
+            renderMemories(); 
             await supabaseClient.from('memories').delete().eq('id', id);
         };
 
-        window.playMemoryAudio = function(url) { new Audio(url).play().catch(e => alert("Audio playback blocked.")); };
+        window.playMemoryAudio = function(url) { new Audio(url).play().catch(e => alert("Audio playback blocked by your browser.")); };
 
-        // AUDIO RECORDER
+        // DYNAMIC AUDIO RECORDER (Cross-browser safe)
         const recordBtn = document.getElementById('record-btn');
         recordBtn.addEventListener('click', async () => {
             if (!mediaRecorder || mediaRecorder.state === 'inactive') {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
+                    // Let the browser choose its preferred safe format natively
+                    const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+                    mediaRecorder = new MediaRecorder(stream, options);
                     mediaRecorder.start(); audioChunks = [];
                     recordBtn.innerText = "🛑 Stop"; recordBtn.classList.replace('bg-red-900/80', 'bg-red-500');
-                    mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
+                    
+                    mediaRecorder.addEventListener("dataavailable", e => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    });
+                    
                     mediaRecorder.addEventListener("stop", () => {
-                        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        document.getElementById('audio-preview').src = URL.createObjectURL(audioBlob);
-                        document.getElementById('audio-preview').classList.remove('hidden');
-                        stream.getTracks().forEach(t => t.stop());
+                        // Create blob and assign properly
+                        const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                        audioBlob = new Blob(audioChunks, { type: mimeType });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const previewPlayer = document.getElementById('audio-preview');
+                        previewPlayer.src = audioUrl;
+                        previewPlayer.classList.remove('hidden');
+                        
+                        stream.getTracks().forEach(t => t.stop()); // release mic
                         recordBtn.innerText = "🎤 Re-Record"; recordBtn.classList.replace('bg-red-500', 'bg-red-900/80');
                     });
-                } catch (err) { alert("Mic denied."); }
+                } catch (err) { alert("Microphone access denied or not supported on this device."); }
             } else { mediaRecorder.stop(); }
         });
 
@@ -910,15 +927,23 @@
             if (!document.getElementById('upload-image').files.length) return alert("You must select a Real Memory image!");
             document.getElementById('pin-loading').classList.remove('hidden');
             try {
+                // Ensure audio is properly processed before upload
+                let finalVoiceUrl = null;
+                if (audioBlob) {
+                    finalVoiceUrl = await uploadBlobToStorage(audioBlob, 'voice');
+                }
+
                 const newMemory = {
                     image_url: await uploadFileToStorage('upload-image', 'memories'),
                     cover_image_url: await uploadFileToStorage('upload-cover', 'memories'),
-                    audio_url: await uploadBlobToStorage(audioBlob, 'voice', 'webm'),
+                    audio_url: finalVoiceUrl,
                     caption: document.getElementById('upload-caption').value,
                     vibe: document.getElementById('upload-vibe').value || "Unknown Vibe"
                 };
                 await supabaseClient.from('memories').insert([newMemory]);
                 await loadDataFromCloud();
+                
+                // Clear UI
                 document.getElementById('upload-image').value = ''; document.getElementById('upload-cover').value = '';
                 document.getElementById('upload-caption').value = ''; document.getElementById('upload-vibe').value = '';
                 document.getElementById('audio-preview').classList.add('hidden'); audioBlob = null; recordBtn.innerText = "🎤 Record Audio";
