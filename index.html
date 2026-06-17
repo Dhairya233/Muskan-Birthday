@@ -6,6 +6,8 @@
     <title>MAD - The Golden Trio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -20,24 +22,95 @@
         }
     </script>
     <style>
-        body { margin: 0; padding: 0; transition: background 1s ease-in-out; }
+        body { margin: 0; padding: 0; transition: background 1s ease-in-out; overflow-x: hidden; }
+        
+        /* THEMES */
         .bg-theme-birthday {
             background-color: #78350f;
             background-image: radial-gradient(ellipse at top, #d97706 0%, #9f1239 50%, #450a0a 100%);
         }
         .bg-theme-village {
-            background-color: #44403c;
-            background-image: radial-gradient(ellipse at top, #78350f 0%, #57534e 50%, #292524 100%);
+            background-color: #292524;
+            background-image: radial-gradient(ellipse at center, #57534e 0%, #292524 60%, #0c0a09 100%);
+            animation: lantern-flicker 8s infinite alternate;
         }
+
+        @keyframes lantern-flicker {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(0.85); }
+            100% { filter: brightness(1.05); }
+        }
+
         .fade-out-scale { transform: scale(1.1); opacity: 0; pointer-events: none; }
-        .theme-village .confetti-layer { display: none; }
+        
+        /* HIDE ELEMENT CLASSES */
+        .theme-village .birthday-fx { display: none !important; }
+        .theme-birthday .village-fx { display: none !important; }
+
         .wanted-poster {
             background-color: #e5e5f7;
             background-image:  repeating-radial-gradient( circle at 0 0, transparent 0, #e5e5f7 10px ), repeating-linear-gradient( #f3e8cb55, #f3e8cb );
             box-shadow: inset 0 0 40px rgba(139,69,19,0.5), 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* Glitch Animation */
+        /* SCATTERED CORKBOARD STYLES */
+        #memory-feed {
+            position: relative;
+            min-height: 1200px; /* Gives room to drag */
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="%234a3628"/><circle cx="50" cy="50" r="2" fill="%23302219" opacity="0.5"/></svg>');
+            border: 12px solid #2e1d13;
+            border-radius: 8px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .polaroid-card {
+            position: absolute;
+            cursor: grab;
+            transition: transform 0.2s ease, z-index 0s, box-shadow 0.2s ease;
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.4);
+            will-change: transform;
+        }
+        .polaroid-card:active {
+            cursor: grabbing;
+            box-shadow: 10px 15px 30px rgba(0,0,0,0.6);
+        }
+
+        /* WISH LANTERNS (BIRTHDAY) */
+        .wish-lantern {
+            position: fixed;
+            bottom: -100px;
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to top, #ff7e00, #ffb03a);
+            border-radius: 50% 50% 10px 10px;
+            box-shadow: 0 0 20px #ff7e00, inset 0 -10px 20px rgba(255,255,255,0.5);
+            animation: float-up linear infinite;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-120vh) rotate(20deg); opacity: 0; }
+        }
+
+        /* VILLAGE SNAKE (VILLAGE) */
+        #village-snake {
+            position: fixed;
+            width: 80px;
+            height: 20px;
+            fill: #4d7c0f;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));
+            pointer-events: none;
+            z-index: 5;
+            transition: all 0.1s linear;
+        }
+
+        /* GLITCH & ANIME FX */
         @keyframes glitch-anim {
             0% { filter: hue-rotate(0deg) contrast(1); transform: translate(0); }
             20% { filter: hue-rotate(90deg) contrast(2) invert(1); transform: translate(-5px, 5px); }
@@ -48,32 +121,24 @@
         }
         .glitch { animation: glitch-anim 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 
-        /* Anime Sequence Animations (Fixed for sizing) */
-        @keyframes anime-flash {
-            0% { background-color: white; opacity: 1; }
-            50% { background-color: red; opacity: 0.8; }
-            100% { background-color: transparent; opacity: 1; }
-        }
-        @keyframes anime-zoom {
-            0% { transform: scale(1.1) rotate(-2deg); filter: contrast(1.2) saturate(1.2); }
-            100% { transform: scale(1) rotate(0deg); filter: contrast(1) saturate(1); }
-        }
-        @keyframes anime-text-slide {
-            0% { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
-            10% { transform: translateX(0) skewX(-15deg); opacity: 1; }
-            90% { transform: translateX(0) skewX(-15deg); opacity: 1; }
-            100% { transform: translateX(100%) skewX(-15deg); opacity: 0; }
-        }
+        @keyframes anime-flash { 0% { background-color: white; opacity: 1; } 50% { background-color: red; opacity: 0.8; } 100% { background-color: transparent; opacity: 1; } }
+        @keyframes anime-zoom { 0% { transform: scale(1.1) rotate(-2deg); filter: contrast(1.2) saturate(1.2); } 100% { transform: scale(1) rotate(0deg); filter: contrast(1) saturate(1); } }
+        @keyframes anime-text-slide { 0% { transform: translateX(-100%) skewX(-15deg); opacity: 0; } 10% { transform: translateX(0) skewX(-15deg); opacity: 1; } 90% { transform: translateX(0) skewX(-15deg); opacity: 1; } 100% { transform: translateX(100%) skewX(-15deg); opacity: 0; } }
         .anime-slide-active { animation: anime-zoom 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
         .anime-flash-active { animation: anime-flash 0.3s ease-out; }
         .anime-text-active { animation: anime-text-slide 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-        
-        /* Hide scrollbar in lightbox */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body id="app-body" class="min-h-screen font-serif bg-theme-birthday text-stone-100 overflow-x-hidden selection:bg-amber-900 selection:text-white">
+
+    <div id="lantern-container" class="birthday-fx fixed inset-0 pointer-events-none z-0"></div>
+    
+    <svg id="village-snake" class="village-fx" viewBox="0 0 100 20" style="left: -100px; top: -100px;">
+        <path d="M10,10 Q20,0 30,10 T50,10 T70,10 T90,10 L95,8 L95,12 Z" stroke="#166534" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="85" cy="8" r="1.5" fill="red"/>
+        <path d="M95,10 Q100,10 105,8 M95,10 Q100,10 105,12" stroke="red" stroke-width="0.5" fill="none"/>
+    </svg>
 
     <div id="loading-overlay" class="fixed inset-0 bg-stone-900 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="text-6xl animate-bounce mb-4">📜</div>
@@ -90,32 +155,28 @@
         <div class="bg-stone-800 border border-stone-600 p-6 rounded-xl shadow-2xl w-full max-w-lg font-sans relative max-h-[90vh] overflow-y-auto no-scrollbar">
             <button onclick="closeEditModal()" class="absolute top-4 right-4 text-stone-400 hover:text-white text-2xl">&times;</button>
             <h4 class="text-amber-500 font-bold mb-4 text-xl">✏️ Edit Memory</h4>
-            
             <div id="edit-loading" class="hidden absolute inset-0 bg-stone-900/90 rounded-xl flex flex-col items-center justify-center z-10 backdrop-blur-sm">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-2"></div>
                 <span class="text-amber-500 font-bold tracking-widest">SAVING CHANGES...</span>
             </div>
-
             <div class="space-y-4">
                 <div class="bg-stone-900/50 p-3 rounded border border-stone-700">
-                    <label class="block text-xs font-bold text-amber-600 uppercase mb-2">Replace Real Memory (Optional)</label>
-                    <input type="file" id="edit-image" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-amber-900 file:text-white">
+                    <label class="block text-xs font-bold text-amber-600 uppercase mb-2">Replace Real Memory</label>
+                    <input type="file" id="edit-image" accept="image/*" class="w-full text-sm text-stone-300 file:bg-amber-900 file:text-white">
                 </div>
                 <div class="bg-stone-900/50 p-3 rounded border border-stone-700">
-                    <label class="block text-xs font-bold text-purple-400 uppercase mb-2">Replace Cover Photo (Optional)</label>
-                    <input type="file" id="edit-cover" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-purple-900 file:text-white">
+                    <label class="block text-xs font-bold text-purple-400 uppercase mb-2">Replace Cover Photo</label>
+                    <input type="file" id="edit-cover" accept="image/*" class="w-full text-sm text-stone-300 file:bg-purple-900 file:text-white">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Edit Vibe</label>
-                    <input type="text" id="edit-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-2 focus:outline-none focus:border-amber-500">
+                    <input type="text" id="edit-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 rounded p-2 focus:border-amber-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Edit Caption</label>
-                    <textarea id="edit-caption" class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-3 focus:outline-none focus:border-amber-500 resize-none h-24"></textarea>
+                    <textarea id="edit-caption" class="w-full bg-stone-700 text-stone-100 rounded p-3 h-24"></textarea>
                 </div>
-                <button id="save-edit-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-8 py-3 rounded font-black shadow-md transition-colors w-full uppercase tracking-wide">
-                    Save Changes
-                </button>
+                <button id="save-edit-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-8 py-3 rounded font-black w-full">Save Changes</button>
             </div>
         </div>
     </div>
@@ -129,32 +190,23 @@
         <button onclick="stopAnimeSequence()" class="absolute top-6 right-6 z-30 text-white/50 hover:text-white font-sans font-bold text-xl uppercase tracking-widest bg-black/50 px-4 py-2 rounded">Skip Sequence ⏭️</button>
     </div>
 
-    <div id="chaos-overlay" class="hidden fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
-        <div class="text-center animate-bounce">
-            <h2 class="text-6xl md:text-8xl font-bold text-red-600 mb-8 uppercase tracking-widest" style="text-shadow: 0 0 20px red;">CHAOS UNLOCKED</h2>
-            <img id="chaos-meme-img" src="" class="max-w-[90vw] max-h-[60vh] mx-auto border-8 border-red-600 shadow-[0_0_50px_red]">
-        </div>
-    </div>
-
     <div class="fixed top-4 right-4 z-40 flex flex-col gap-2 items-end">
-        <button id="theme-toggle" class="bg-stone-100/20 hover:bg-stone-100/40 backdrop-blur border border-stone-100/30 text-white px-4 py-2 rounded-full font-sans text-sm font-bold transition-all shadow-lg">
+        <button id="theme-toggle" class="bg-stone-100/20 hover:bg-stone-100/40 backdrop-blur border border-stone-100/30 text-white px-4 py-2 rounded-full font-sans text-sm font-bold shadow-lg">
             🏮 Switch to Village Theme
         </button>
-        <button id="bgm-toggle" class="hidden bg-stone-900/60 hover:bg-stone-900/80 backdrop-blur border border-stone-500/30 text-amber-500 px-4 py-2 rounded-full font-sans text-xs font-bold transition-all shadow-lg">
+        <button id="bgm-toggle" class="hidden bg-stone-900/60 hover:bg-stone-900/80 backdrop-blur border border-stone-500/30 text-amber-500 px-4 py-2 rounded-full font-sans text-xs font-bold shadow-lg">
             🎵 Play Background Music
         </button>
     </div>
 
-    <button id="admin-trigger" class="fixed bottom-4 left-4 w-8 h-8 opacity-10 hover:opacity-100 cursor-default flex items-center justify-center z-40 transition-opacity">
-        ⚙️
-    </button>
+    <button id="admin-trigger" class="fixed bottom-4 left-4 w-8 h-8 opacity-10 hover:opacity-100 flex items-center justify-center z-40">⚙️</button>
 
     <div id="password-prompt" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
         <div class="bg-stone-800 p-6 rounded border-2 border-stone-600 shadow-2xl">
             <h3 class="text-amber-500 mb-4 font-sans font-bold">Master Override Request</h3>
             <input type="password" id="master-password" placeholder="Enter Master Key" class="w-full bg-stone-900 text-white p-2 rounded mb-4 font-sans outline-none focus:ring-2 focus:ring-amber-500">
             <div class="flex justify-end gap-2">
-                <button id="cancel-password" class="px-4 py-2 text-stone-400 hover:text-white font-sans">Cancel</button>
+                <button id="cancel-password" class="px-4 py-2 text-stone-400">Cancel</button>
                 <button id="submit-password" class="px-4 py-2 bg-amber-700 hover:bg-amber-600 rounded text-white font-sans">Access</button>
             </div>
         </div>
@@ -174,166 +226,111 @@
                         <input type="checkbox" id="setting-bypass" class="w-6 h-6">
                     </div>
                     <div>
-                        <label class="block font-semibold text-sm text-amber-900 mb-1">Birthday Theme BGM (MP3/WAV)</label>
+                        <label class="block font-semibold text-sm text-amber-900 mb-1">Birthday Theme BGM</label>
                         <input type="file" id="set-bgm-file" accept="audio/*" class="w-full text-sm">
                         <p id="current-bgm-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
                     </div>
                     <div>
-                        <label class="block font-semibold text-sm text-amber-900 mb-1">Village Theme BGM (MP3/WAV)</label>
+                        <label class="block font-semibold text-sm text-amber-900 mb-1">Village Theme BGM</label>
                         <input type="file" id="set-bgm-village-file" accept="audio/*" class="w-full text-sm">
                         <p id="current-bgm-village-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
                     </div>
                     <div>
-                        <label class="block font-semibold text-sm text-amber-900 mb-1">Wrong Answer Audio (MP3/WAV)</label>
+                        <label class="block font-semibold text-sm text-amber-900 mb-1">Wrong Answer Audio</label>
                         <input type="file" id="set-audio-file" accept="audio/*" class="w-full text-sm">
                         <p id="current-wrong-audio-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
                     </div>
                 </div>
                 
                 <div class="bg-amber-100 p-4 rounded border border-amber-300 space-y-2">
-                    <h3 class="font-bold text-amber-900 mb-2">Personalization Details</h3>
+                    <h3 class="font-bold text-amber-900 mb-2">Personalization</h3>
                     <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block font-semibold text-sm">Name</label>
-                            <input type="text" id="set-name" class="w-full p-2 rounded border border-stone-300">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block font-semibold text-sm">Date</label>
-                            <input type="text" id="set-date" class="w-full p-2 rounded border border-stone-300">
-                        </div>
+                        <div class="flex-1"><label class="block text-sm">Name</label><input type="text" id="set-name" class="w-full p-2 border border-stone-300 rounded"></div>
+                        <div class="flex-1"><label class="block text-sm">Date</label><input type="text" id="set-date" class="w-full p-2 border border-stone-300 rounded"></div>
                     </div>
-                    <label class="block font-semibold text-sm mt-2">Card Description</label>
-                    <textarea id="set-desc" class="w-full p-2 rounded border border-stone-300 h-24 resize-none"></textarea>
+                    <label class="block text-sm mt-2">Card Description</label>
+                    <textarea id="set-desc" class="w-full p-2 border border-stone-300 rounded h-24 resize-none"></textarea>
                 </div>
 
                 <div class="bg-red-100 p-4 rounded border border-red-300 space-y-2">
-                    <h3 class="font-bold text-red-900 mb-2">Village Wanted Board</h3>
-                    <label class="block font-semibold text-sm">Target Name</label>
-                    <input type="text" id="set-wanted-name" class="w-full p-2 rounded border border-stone-300">
-                    <label class="block font-semibold text-sm mt-2">The Crime</label>
-                    <input type="text" id="set-wanted-crime" class="w-full p-2 rounded border border-stone-300">
-                    <label class="block font-semibold text-sm mt-2">Bounty Reward</label>
-                    <input type="text" id="set-wanted-bounty" class="w-full p-2 rounded border border-stone-300">
-                    <label class="block font-semibold text-sm mt-2">Mugshot Image File</label>
+                    <h3 class="font-bold text-red-900 mb-2">Wanted Board</h3>
+                    <input type="text" id="set-wanted-name" class="w-full p-2 border rounded mb-1" placeholder="Name">
+                    <input type="text" id="set-wanted-crime" class="w-full p-2 border rounded mb-1" placeholder="Crime">
+                    <input type="text" id="set-wanted-bounty" class="w-full p-2 border rounded mb-1" placeholder="Reward">
                     <input type="file" id="set-wanted-file" accept="image/*" class="w-full text-sm">
                     <p id="current-wanted-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
                 </div>
 
-                <div class="bg-purple-100 p-4 rounded border border-purple-300 space-y-2">
-                    <h3 class="font-bold text-purple-900 mb-2">Chaos Key Trigger</h3>
-                    <label class="block font-semibold text-sm">Secret Keyword</label>
-                    <input type="text" id="set-chaos-keyword" class="w-full p-2 rounded border border-stone-300 mb-2">
-                    <label class="block font-semibold text-sm">Meme Image File</label>
-                    <input type="file" id="set-chaos-file" accept="image/*" class="w-full text-sm">
-                    <p id="current-chaos-status" class="text-xs text-emerald-600 font-bold mt-1"></p>
-                </div>
-
                 <div class="bg-stone-200 p-4 rounded space-y-2">
                     <h3 class="font-bold text-amber-900 mb-2 border-b border-stone-300 pb-1">The Riddles</h3>
-                    <label class="block font-semibold text-sm">Q1</label>
-                    <input type="text" id="set-q1" class="w-full p-2 rounded border border-stone-300 mb-1">
-                    <input type="text" id="set-a1" class="w-full p-2 rounded border border-stone-300 mb-3" placeholder="Answer 1">
-                    
-                    <label class="block font-semibold text-sm">Q2</label>
-                    <input type="text" id="set-q2" class="w-full p-2 rounded border border-stone-300 mb-1">
-                    <input type="text" id="set-a2" class="w-full p-2 rounded border border-stone-300 mb-3" placeholder="Answer 2">
-                    
-                    <label class="block font-semibold text-sm">Q3</label>
-                    <input type="text" id="set-q3" class="w-full p-2 rounded border border-stone-300 mb-1">
-                    <input type="text" id="set-a3" class="w-full p-2 rounded border border-stone-300" placeholder="Answer 3">
+                    <input type="text" id="set-q1" class="w-full p-2 rounded border mb-1" placeholder="Q1">
+                    <input type="text" id="set-a1" class="w-full p-2 rounded border mb-3" placeholder="A1">
+                    <input type="text" id="set-q2" class="w-full p-2 rounded border mb-1" placeholder="Q2">
+                    <input type="text" id="set-a2" class="w-full p-2 rounded border mb-3" placeholder="A2">
+                    <input type="text" id="set-q3" class="w-full p-2 rounded border mb-1" placeholder="Q3">
+                    <input type="text" id="set-a3" class="w-full p-2 rounded border" placeholder="A3">
                 </div>
                 
-                <button id="save-settings" class="w-full bg-amber-900 text-white font-bold py-3 rounded hover:bg-amber-800 transition-colors shadow-lg">Save & Upload to Cloud</button>
+                <button id="save-settings" class="w-full bg-amber-900 text-white font-bold py-3 rounded hover:bg-amber-800 shadow-lg">Save & Upload to Cloud</button>
             </div>
         </div>
     </div>
 
-    <div id="gate-screen" class="relative transition-all duration-[1500ms] ease-in-out opacity-100 min-h-screen flex items-center justify-center p-4 z-10">
-        <div class="absolute top-0 left-0 w-full flex justify-between p-4 opacity-70 pointer-events-none">
-            <span id="gate-icon-1" class="text-4xl animate-pulse">✨</span>
-            <span id="gate-icon-2" class="text-4xl animate-bounce text-amber-300">🎉</span>
-            <span id="gate-icon-3" class="text-4xl animate-pulse">✨</span>
-        </div>
-
-        <div class="bg-[#fdf5e6] text-stone-800 border-[6px] border-double border-amber-900/30 p-8 md:p-12 max-w-xl w-full rounded-sm shadow-[0_0_50px_rgba(0,0,0,0.4),inset_0_0_40px_rgba(139,69,19,0.15)] relative overflow-hidden text-center z-20">
+    <div id="gate-screen" class="relative transition-all duration-[1500ms] opacity-100 min-h-screen flex items-center justify-center p-4 z-10">
+        <div class="bg-[#fdf5e6] text-stone-800 border-[6px] border-double border-amber-900/30 p-8 md:p-12 max-w-xl w-full rounded-sm shadow-2xl relative z-20">
             <h1 class="text-3xl md:text-4xl font-bold text-amber-900 mb-2 leading-snug">MAD - The Golden Trio</h1>
             <h2 class="text-xl md:text-2xl font-semibold mb-6 text-stone-700 border-b-2 border-stone-300 pb-4">
                 Happy Birthday, <span id="display-name-gate" class="text-amber-600"></span>! <span id="gate-title-icon">🎂</span>
             </h2>
-            <p class="italic text-stone-600 mb-8 font-serif">
-                Your present is locked away in the village vault. Solve these 3 insider riddles to open the gates...
-            </p>
-
-            <div id="error-msg" class="hidden bg-red-100 text-red-800 border-l-4 border-red-600 p-3 mb-6 text-sm font-sans font-medium text-left animate-bounce"></div>
+            <p class="italic text-stone-600 mb-8 font-serif">Solve these 3 insider riddles to open the gates...</p>
+            <div id="error-msg" class="hidden bg-red-100 text-red-800 border-l-4 p-3 mb-6 text-sm font-sans font-medium text-left animate-bounce"></div>
 
             <div class="space-y-6 text-left">
-                <div class="space-y-1">
+                <div>
                     <label class="block text-sm font-bold text-amber-900">Riddle #1</label>
                     <p id="display-q1" class="text-stone-700 text-sm mb-2"></p>
-                    <input type="text" id="ans1" class="w-full bg-transparent border-b-2 border-amber-900/30 focus:border-amber-900 outline-none px-2 py-1 text-stone-900 placeholder-stone-400 font-sans transition-colors" placeholder="Your answer...">
+                    <input type="text" id="ans1" class="w-full bg-transparent border-b-2 border-amber-900/30 outline-none px-2 py-1 text-stone-900 font-sans" placeholder="...">
                 </div>
-                <div class="space-y-1">
+                <div>
                     <label class="block text-sm font-bold text-amber-900">Riddle #2</label>
                     <p id="display-q2" class="text-stone-700 text-sm mb-2"></p>
-                    <input type="text" id="ans2" class="w-full bg-transparent border-b-2 border-amber-900/30 focus:border-amber-900 outline-none px-2 py-1 text-stone-900 placeholder-stone-400 font-sans transition-colors" placeholder="Your answer...">
+                    <input type="text" id="ans2" class="w-full bg-transparent border-b-2 border-amber-900/30 outline-none px-2 py-1 text-stone-900 font-sans" placeholder="...">
                 </div>
-                <div class="space-y-1">
+                <div>
                     <label class="block text-sm font-bold text-amber-900">Riddle #3</label>
                     <p id="display-q3" class="text-stone-700 text-sm mb-2"></p>
-                    <input type="text" id="ans3" class="w-full bg-transparent border-b-2 border-amber-900/30 focus:border-amber-900 outline-none px-2 py-1 text-stone-900 placeholder-stone-400 font-sans transition-colors" placeholder="Your answer...">
+                    <input type="text" id="ans3" class="w-full bg-transparent border-b-2 border-amber-900/30 outline-none px-2 py-1 text-stone-900 font-sans" placeholder="...">
                 </div>
             </div>
-
-            <button id="unlock-btn" class="mt-10 bg-amber-900 hover:bg-amber-800 text-[#fdf5e6] px-8 py-3 rounded shadow-lg transition-all transform hover:-translate-y-1 w-full font-bold text-lg font-sans tracking-wide">
-                🗝️ Unlock Vault
-            </button>
+            <button id="unlock-btn" class="mt-10 bg-amber-900 hover:bg-amber-800 text-[#fdf5e6] px-8 py-3 rounded shadow-lg w-full font-bold text-lg font-sans tracking-wide">🗝️ Unlock Vault</button>
         </div>
     </div>
 
     <div id="vault-screen" class="transition-opacity duration-1000 opacity-0 hidden relative z-10">
         <section class="min-h-screen flex flex-col items-center justify-center p-6 relative">
-            <div class="confetti-layer absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSIyIiBmaWxsPSIjRkZEMzAwIiBvcGFjaXR5PSIwLjUiLz48Y2lyY2xlIGN4PSIyNTAiIGN4PSIyNTAiIHI9IjMiIGZpbGw9IiNGRjU3MzMiIG9wYWNpdHk9IjAuNiIvPjwvc3ZnPg==')] opacity-50 pointer-events-none"></div>
-            
             <div class="max-w-3xl w-full bg-[#fdf5e6] text-stone-800 p-8 md:p-12 rounded-lg shadow-2xl relative z-10 text-center transform -rotate-1 border-8 border-stone-200">
                 <div class="mb-4 text-amber-600 font-sans font-bold tracking-widest uppercase text-sm" id="display-date"></div>
-                <h2 class="text-4xl md:text-5xl font-bold text-amber-900 mb-6 drop-shadow-sm">Welcome to the Vault, <span id="display-name-card"></span>! <span id="card-icon">🎉</span></h2>
-                
+                <h2 class="text-4xl md:text-5xl font-bold text-amber-900 mb-6">Welcome to the Vault, <span id="display-name-card"></span>! <span id="card-icon">🎉</span></h2>
                 <p id="display-desc" class="text-lg md:text-xl font-serif leading-relaxed text-stone-700 italic whitespace-pre-wrap mb-8"></p>
-
-                <button onclick="triggerAnimeSequence()" class="bg-red-800 text-white hover:bg-red-700 font-sans font-black uppercase tracking-widest px-8 py-4 rounded-lg shadow-[0_0_20px_rgba(153,27,27,0.5)] transform hover:scale-105 transition-all animate-pulse">
-                    ▶️ Play The Trio Sequence
-                </button>
+                <button onclick="triggerAnimeSequence()" class="bg-red-800 text-white hover:bg-red-700 font-sans font-black uppercase tracking-widest px-8 py-4 rounded-lg shadow-[0_0_20px_rgba(153,27,27,0.5)] transform hover:scale-105 transition-all animate-pulse">▶️ Play The Trio Sequence</button>
             </div>
-
-            <div class="mt-16 text-center animate-bounce text-stone-300 font-sans tracking-widest text-sm uppercase font-bold bg-stone-900/40 px-4 py-2 rounded-full backdrop-blur">
-                Scroll down to enter the Village Archives
-                <div class="mt-1 text-xl">↓</div>
-            </div>
+            <div class="mt-16 text-center animate-bounce text-stone-300 font-sans tracking-widest text-sm uppercase font-bold bg-stone-900/40 px-4 py-2 rounded-full backdrop-blur">Scroll down <br>↓</div>
         </section>
 
-        <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-6 md:p-12 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-            <div class="max-w-4xl mx-auto">
+        <section class="min-h-screen bg-stone-900/60 backdrop-blur-md border-t-4 border-amber-900/50 p-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+            <div class="max-w-[1200px] mx-auto">
                 
-                <div class="wanted-poster p-8 md:p-12 rounded text-center text-stone-900 mb-16 transform rotate-1">
+                <div class="wanted-poster max-w-xl mx-auto p-8 rounded text-center text-stone-900 mb-16 transform rotate-2">
                     <h2 class="text-5xl md:text-7xl font-bold tracking-widest uppercase mb-4 text-amber-900" style="font-family: 'Times New Roman', serif;">WANTED</h2>
                     <p class="text-xl font-bold tracking-widest border-b-2 border-stone-800 pb-2 mb-6 uppercase">Dead or Alive</p>
-                    
-                    <div class="w-48 h-48 md:w-64 md:h-64 mx-auto border-4 border-stone-800 mb-6 shadow-md overflow-hidden bg-stone-300">
-                        <img id="display-wanted-img" src="" class="w-full h-full object-cover sepia-[.5]">
-                    </div>
-                    
+                    <div class="w-48 h-48 md:w-64 md:h-64 mx-auto border-4 border-stone-800 mb-6 bg-stone-300"><img id="display-wanted-img" src="" class="w-full h-full object-cover sepia-[.5]"></div>
                     <h3 id="display-wanted-name" class="text-3xl font-bold uppercase mb-2"></h3>
                     <p class="text-lg font-serif italic mb-4">Wanted for the severe crime of:</p>
                     <p id="display-wanted-crime" class="text-xl font-bold text-red-800 mb-6"></p>
                     <p class="text-xl font-bold border-t-2 border-stone-800 pt-4 uppercase">Reward: <span id="display-wanted-bounty" class="text-amber-700"></span></p>
                 </div>
 
-                <div class="text-center mb-12 border-t border-stone-600 pt-12">
-                    <h3 class="text-3xl font-bold text-[#fdf5e6] mb-2 font-serif">The Public Notice Board</h3>
-                    <p class="text-stone-300 font-sans text-sm mt-2">Double-click suspicious photos to reveal the truth. Click 🔍 to enlarge. Press ▶️ on polaroids to hear the Director's Cut.</p>
-                </div>
-
-                <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans relative">
+                <div class="bg-stone-800/80 border border-stone-600 p-6 rounded-xl shadow-2xl mb-12 font-sans relative max-w-3xl mx-auto">
                     <div id="pin-loading" class="hidden absolute inset-0 bg-stone-900/90 rounded-xl flex flex-col items-center justify-center z-10 backdrop-blur-sm">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-2"></div>
                         <span class="text-amber-500 font-bold tracking-widest">UPLOADING...</span>
@@ -343,47 +340,41 @@
                     <div class="space-y-4">
                         <div class="flex flex-col md:flex-row gap-4">
                             <div class="flex-1 bg-stone-900/50 p-3 rounded border border-stone-700">
-                                <label class="block text-xs font-bold text-amber-600 uppercase mb-2">1. The Real Memory (Required)</label>
-                                <input type="file" id="upload-image" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-amber-900 file:text-[#fdf5e6]">
+                                <label class="block text-xs font-bold text-amber-600 uppercase mb-2">1. Real Memory</label>
+                                <input type="file" id="upload-image" accept="image/*" class="w-full text-sm text-stone-300 file:bg-amber-900 file:text-white">
                             </div>
                             <div class="flex-1 bg-stone-900/50 p-3 rounded border border-stone-700">
-                                <label class="block text-xs font-bold text-purple-400 uppercase mb-2">2. Cover Photo (Steganography)</label>
-                                <input type="file" id="upload-cover" accept="image/*" class="w-full text-sm text-stone-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-900 file:text-white">
-                                <p class="text-[10px] text-stone-500 mt-1 italic">Hides the real photo until double-clicked.</p>
+                                <label class="block text-xs font-bold text-purple-400 uppercase mb-2">2. Cover Photo (Steg)</label>
+                                <input type="file" id="upload-cover" accept="image/*" class="w-full text-sm text-stone-300 file:bg-purple-900 file:text-white">
                             </div>
                         </div>
 
                         <div class="flex flex-col md:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Custom Vibe</label>
-                                <input type="text" id="upload-vibe" list="vibe-options" placeholder="Type or select vibe..." class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-2 focus:outline-none focus:border-amber-500">
-                                <datalist id="vibe-options">
-                                    <option value="Wholesome (Sunlit Meadows)"></option>
-                                    <option value="Chaotic (The Village Riot)"></option>
-                                    <option value="Late Night (Tavern Chats)"></option>
-                                    <option value="Absolute Disaster"></option>
-                                </datalist>
+                                <input type="text" id="upload-vibe" list="vibe-options" class="w-full bg-stone-700 text-stone-100 rounded p-2 focus:border-amber-500">
+                                <datalist id="vibe-options"><option value="Wholesome"><option value="Chaotic"><option value="Absolute Disaster"></datalist>
                             </div>
                             <div class="flex-1 flex flex-col justify-end">
-                                <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Director's Cut Audio (Optional)</label>
+                                <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Director's Cut Audio</label>
                                 <div class="flex gap-2">
-                                    <button id="record-btn" class="bg-red-900/80 hover:bg-red-800 text-white px-4 py-2 rounded text-sm font-bold transition-colors flex-1">🎤 Record Audio</button>
+                                    <button id="record-btn" class="bg-red-900/80 hover:bg-red-800 text-white px-4 py-2 rounded text-sm font-bold flex-1">🎤 Record Audio</button>
                                     <audio id="audio-preview" controls class="hidden w-full h-9"></audio>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Caption</label>
-                            <textarea id="upload-caption" placeholder="What happened? The truth only..." class="w-full bg-stone-700 text-stone-100 border border-stone-500 rounded p-3 focus:outline-none focus:border-amber-500 resize-none h-20"></textarea>
+                            <label class="block text-xs text-stone-400 uppercase tracking-wider mb-2">Caption</label>
+                            <textarea id="upload-caption" class="w-full bg-stone-700 text-stone-100 rounded p-3 h-20"></textarea>
                         </div>
-                        <button id="pin-btn" class="bg-amber-100 hover:bg-white text-stone-900 px-8 py-3 rounded font-black shadow-md transition-colors w-full md:w-auto uppercase tracking-wide">
-                            Pin to Board
-                        </button>
+                        <button id="pin-btn" class="bg-amber-100 hover:bg-white text-stone-900 px-8 py-3 rounded font-black w-full md:w-auto uppercase tracking-wide">Pin to Board</button>
                     </div>
                 </div>
 
-                <div id="memory-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                <div class="text-center mb-8"><h3 class="text-3xl font-bold text-[#fdf5e6] font-serif">The Trio Board</h3><p class="text-stone-400 text-sm mt-2 font-sans">Drag memories around to organize the chaos.</p></div>
+
+                <div id="memory-feed"></div>
             </div>
         </section>
     </div>
@@ -400,15 +391,10 @@
         let settings = {};
         let memories = [];
         let editingMemoryId = null;
-        
         let wrongAudioPlayer = new Audio();
-        let bgmPlayer = new Audio();
-        bgmPlayer.loop = true;
-        
-        let keyBuffer = "";
-        let audioBlob = null;
-        let mediaRecorder = null;
-        let audioChunks = [];
+        let bgmPlayer = new Audio(); bgmPlayer.loop = true;
+        let audioBlob = null; let mediaRecorder = null; let audioChunks = [];
+        let maxZIndex = 100; // For dragging cards
 
         // ==========================================
         // 2. HELPER: UPLOAD FILE TO STORAGE
@@ -416,16 +402,10 @@
         async function uploadFileToStorage(fileInputId, pathPrefix) {
             const fileInput = document.getElementById(fileInputId);
             if (!fileInput.files || fileInput.files.length === 0) return null;
-            
             const file = fileInput.files[0];
             const fileName = `${pathPrefix}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-            
             const { data, error } = await supabaseClient.storage.from('vault_files').upload(fileName, file);
-            if (error) {
-                console.error("Upload error:", error);
-                throw error;
-            }
-            
+            if (error) throw error;
             const { data: publicUrlData } = supabaseClient.storage.from('vault_files').getPublicUrl(data.path);
             return publicUrlData.publicUrl;
         }
@@ -434,10 +414,8 @@
             if (!blob) return null;
             const fileName = `${pathPrefix}/${Date.now()}_audio.${extension}`;
             const file = new File([blob], fileName, { type: blob.type });
-            
             const { data, error } = await supabaseClient.storage.from('vault_files').upload(fileName, file);
             if (error) throw error;
-            
             const { data: publicUrlData } = supabaseClient.storage.from('vault_files').getPublicUrl(data.path);
             return publicUrlData.publicUrl;
         }
@@ -454,7 +432,6 @@
                     settings = {
                         bdayName: settingsData.bday_name, bdayDate: settingsData.bday_date, bdayDesc: settingsData.bday_desc,
                         wantedName: settingsData.wanted_name, wantedCrime: settingsData.wanted_crime, wantedBounty: settingsData.wanted_bounty, wantedImg: settingsData.wanted_img,
-                        chaosKeyword: settingsData.chaos_keyword, chaosMemeUrl: settingsData.chaos_meme_url,
                         q1: settingsData.q1, a1: settingsData.a1, q2: settingsData.q2, a2: settingsData.a2, q3: settingsData.q3, a3: settingsData.a3,
                         wrongAudioUrl: settingsData.wrong_audio_url, bgmUrl: settingsData.bgm_url, bgmVillageUrl: settingsData.bgm_village_url,
                         isBypassEnabled: settingsData.is_bypass_enabled, currentTheme: settingsData.current_theme
@@ -466,51 +443,34 @@
                 if (memData) memories = memData;
 
                 wrongAudioPlayer.src = settings.wrongAudioUrl || "";
-                
-                // Set initial BGM
                 const initialBgm = settings.currentTheme === 'birthday' ? settings.bgmUrl : settings.bgmVillageUrl;
                 bgmPlayer.src = initialBgm || "";
                 if (settings.bgmUrl || settings.bgmVillageUrl) document.getElementById('bgm-toggle').classList.remove('hidden');
 
+                generateLanterns();
+                initSnake();
                 applyTheme();
                 updateUIWithSettings();
-                renderMemories();
+                renderScatteredMemories();
 
                 document.getElementById('loading-overlay').classList.add('opacity-0');
                 setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 500);
-            } catch (error) {
-                console.error(error);
-                alert("Database connection failed.");
-            }
+            } catch (error) { console.error(error); alert("Database connection failed."); }
         }
 
-        // ==========================================
-        // 4. UI RENDERERS & MODALS
-        // ==========================================
         function updateUIWithSettings() {
             document.getElementById('display-name-gate').innerText = settings.bdayName;
             document.getElementById('display-name-card').innerText = settings.bdayName;
             document.getElementById('display-date').innerText = settings.bdayDate;
             document.getElementById('display-desc').innerText = settings.bdayDesc;
-            
             document.getElementById('display-wanted-name').innerText = settings.wantedName;
             document.getElementById('display-wanted-crime').innerText = settings.wantedCrime;
             document.getElementById('display-wanted-bounty').innerText = settings.wantedBounty;
             document.getElementById('display-wanted-img').src = settings.wantedImg || "https://placehold.co/400?text=No+Image";
-
-            document.getElementById('display-q1').innerText = settings.q1;
-            document.getElementById('display-q2').innerText = settings.q2;
-            document.getElementById('display-q3').innerText = settings.q3;
+            document.getElementById('display-q1').innerText = settings.q1; document.getElementById('display-q2').innerText = settings.q2; document.getElementById('display-q3').innerText = settings.q3;
             
-            document.getElementById('set-name').value = settings.bdayName;
-            document.getElementById('set-date').value = settings.bdayDate;
-            document.getElementById('set-desc').value = settings.bdayDesc;
-            document.getElementById('set-wanted-name').value = settings.wantedName;
-            document.getElementById('set-wanted-crime').value = settings.wantedCrime;
-            document.getElementById('set-wanted-bounty').value = settings.wantedBounty;
-            
-            document.getElementById('set-chaos-keyword').value = settings.chaosKeyword;
-            
+            document.getElementById('set-name').value = settings.bdayName; document.getElementById('set-date').value = settings.bdayDate; document.getElementById('set-desc').value = settings.bdayDesc;
+            document.getElementById('set-wanted-name').value = settings.wantedName; document.getElementById('set-wanted-crime').value = settings.wantedCrime; document.getElementById('set-wanted-bounty').value = settings.wantedBounty;
             document.getElementById('set-q1').value = settings.q1; document.getElementById('set-a1').value = settings.a1;
             document.getElementById('set-q2').value = settings.q2; document.getElementById('set-a2').value = settings.a2;
             document.getElementById('set-q3').value = settings.q3; document.getElementById('set-a3').value = settings.a3;
@@ -520,145 +480,248 @@
             document.getElementById('current-bgm-village-status').innerText = settings.bgmVillageUrl ? "✓ Linked" : "";
             document.getElementById('current-wrong-audio-status').innerText = settings.wrongAudioUrl ? "✓ Linked" : "";
             document.getElementById('current-wanted-status').innerText = settings.wantedImg ? "✓ Linked" : "";
-            document.getElementById('current-chaos-status').innerText = settings.chaosMemeUrl ? "✓ Linked" : "";
         }
 
-        // LIGHTBOX
-        window.openLightbox = function(id) {
-            const mem = memories.find(m => m.id === id);
-            if(!mem) return;
-            const displayUrl = mem.cover_image_url ? mem.cover_image_url : mem.image_url; // Shows cover if it exists, otherwise real image
+        // ==========================================
+        // 4. ANIMATIONS & FX ENGINE
+        // ==========================================
+
+        function generateLanterns() {
+            const container = document.getElementById('lantern-container');
+            container.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                let lantern = document.createElement('div');
+                lantern.className = 'wish-lantern';
+                lantern.style.left = `${Math.random() * 100}vw`;
+                lantern.style.animationDuration = `${10 + Math.random() * 15}s`;
+                lantern.style.animationDelay = `${Math.random() * 5}s`;
+                lantern.style.transform = `scale(${0.5 + Math.random() * 0.8})`;
+                container.appendChild(lantern);
+            }
+        }
+
+        function initSnake() {
+            const snake = document.getElementById('village-snake');
+            setInterval(() => {
+                if(settings.currentTheme !== 'village') return;
+                const side = Math.floor(Math.random() * 4);
+                let x, y, rot;
+                if(side === 0) { x = -100; y = Math.random() * window.innerHeight; rot = 0; } // Left
+                else if(side === 1) { x = window.innerWidth + 100; y = Math.random() * window.innerHeight; rot = 180; } // Right
+                else if(side === 2) { x = Math.random() * window.innerWidth; y = -100; rot = 90; } // Top
+                else { x = Math.random() * window.innerWidth; y = window.innerHeight + 100; rot = -90; } // Bottom
+                
+                snake.style.transition = 'none';
+                snake.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+                
+                setTimeout(() => {
+                    snake.style.transition = 'transform 6s linear';
+                    if(side === 0) x += 400; else if(side === 1) x -= 400; else if(side === 2) y += 400; else y -= 400;
+                    snake.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+                }, 50);
+            }, 8000);
+        }
+
+        function applyTheme() {
+            const appBody = document.getElementById('app-body');
+            const themeBtn = document.getElementById('theme-toggle');
             
-            document.getElementById('lightbox-img').src = displayUrl;
-            document.getElementById('lightbox-caption').innerText = mem.caption;
-            const lb = document.getElementById('lightbox-overlay');
-            lb.classList.remove('hidden');
-            setTimeout(() => lb.classList.remove('opacity-0'), 10);
-        };
+            if (settings.currentTheme === 'birthday') {
+                appBody.classList.remove('bg-theme-village', 'theme-village');
+                appBody.classList.add('bg-theme-birthday', 'theme-birthday');
+                themeBtn.innerText = "🏮 Switch to Village Theme";
+                document.getElementById('gate-title-icon').innerText = "🎂";
+                document.getElementById('card-icon').innerText = "🎉";
+            } else {
+                appBody.classList.remove('bg-theme-birthday', 'theme-birthday');
+                appBody.classList.add('bg-theme-village', 'theme-village');
+                themeBtn.innerText = "🎊 Switch to Birthday Theme";
+                document.getElementById('gate-title-icon').innerText = "🐍";
+                document.getElementById('card-icon').innerText = "🐍";
+            }
+            updateBGM(true);
+        }
 
-        window.closeLightbox = function() {
-            const lb = document.getElementById('lightbox-overlay');
-            lb.classList.add('opacity-0');
-            setTimeout(() => lb.classList.add('hidden'), 300);
-        };
+        document.getElementById('theme-toggle').addEventListener('click', async () => {
+            settings.currentTheme = settings.currentTheme === 'birthday' ? 'village' : 'birthday';
+            applyTheme();
+            await supabaseClient.from('vault_settings').update({ current_theme: settings.currentTheme }).eq('id', 1);
+        });
 
-        // STEGANOGRAPHY DECODE
+        const bgmBtn = document.getElementById('bgm-toggle');
+        function updateBGM(isThemeChange = false) {
+            const targetSrc = settings.currentTheme === 'birthday' ? settings.bgmUrl : settings.bgmVillageUrl;
+            const isCurrentlyPlaying = !bgmPlayer.paused && bgmPlayer.currentTime > 0;
+            if (bgmPlayer.src !== targetSrc) {
+                bgmPlayer.src = targetSrc || "";
+                if (isCurrentlyPlaying && targetSrc) bgmPlayer.play().catch(e=>console.log(e));
+                else if (isCurrentlyPlaying && !targetSrc) { bgmPlayer.pause(); bgmBtn.innerText = "🎵 Play Background Music"; bgmBtn.classList.replace('text-stone-100', 'text-amber-500'); }
+            }
+        }
+        bgmBtn.addEventListener('click', () => {
+            if(bgmPlayer.paused) { bgmPlayer.play(); bgmBtn.innerText = "🔇 Pause Background Music"; bgmBtn.classList.replace('text-amber-500', 'text-stone-100'); } 
+            else { bgmPlayer.pause(); bgmBtn.innerText = "🎵 Play Background Music"; bgmBtn.classList.replace('text-stone-100', 'text-amber-500'); }
+        });
+
+        // ==========================================
+        // 5. CORKBOARD RENDERER & DRAG LOGIC
+        // ==========================================
+        function renderScatteredMemories() {
+            const feed = document.getElementById('memory-feed');
+            feed.innerHTML = '';
+            
+            memories.forEach((memory, index) => {
+                let badgeClass = 'bg-emerald-100 text-emerald-800';
+                if (memory.vibe.includes('Chaotic') || memory.vibe.includes('Disaster')) badgeClass = 'bg-red-100 text-red-800';
+                if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800';
+
+                const isSteg = !!memory.cover_image_url;
+                const displayUrl = isSteg ? memory.cover_image_url : memory.image_url;
+                const onClickLogic = isSteg ? `ondblclick="decodeMemory(${memory.id}, '${memory.image_url}', this)"` : "";
+                const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 pointer-events-none transition"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Dbl-Click Decode</span></div>` : "";
+                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow z-20">▶️</button>` : "";
+
+                // Calculate Random Scatter
+                const rot = (Math.random() * 30) - 15; // -15 to +15 deg
+                const left = 5 + Math.random() * 70; // 5% to 75% wide
+                const top = 20 + (index * 120) + (Math.random() * 80 - 40); // Stack downwards
+                
+                const card = document.createElement('div');
+                card.className = "polaroid-card bg-[#fdf5e6] p-3 pb-10 group";
+                card.style.width = "280px";
+                card.style.transform = `translate(${left}vw, ${top}px) rotate(${rot}deg)`;
+                card.style.zIndex = index + 1;
+                card.dataset.x = left * (window.innerWidth / 100);
+                card.dataset.y = top;
+
+                card.innerHTML = `
+                    <button onclick="deleteMemory(${memory.id})" class="absolute top-2 right-2 bg-red-600/80 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100">🗑️</button>
+                    <button onclick="openEditModal(${memory.id})" class="absolute top-2 right-12 bg-blue-600/80 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100">✏️</button>
+                    ${audioHTML}
+                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow border-2 border-red-900/50"></div>
+                    <div class="aspect-square bg-stone-200 mb-3 overflow-hidden border border-stone-300 relative" ${onClickLogic}>
+                        <img src="${displayUrl}" class="w-full h-full object-cover" />
+                        ${hintHTML}
+                        <button onclick="openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 z-20">🔍</button>
+                    </div>
+                    <p class="text-stone-800 font-serif text-sm leading-snug mb-2">${memory.caption}</p>
+                    <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center text-[10px] font-sans font-bold">
+                        <span class="text-stone-500">${memory.created_at ? new Date(memory.created_at).toLocaleDateString() : ""}</span>
+                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[100px] truncate border-current">${memory.vibe}</span>
+                    </div>
+                `;
+
+                // Drag Logic
+                card.addEventListener('mousedown', dragStart);
+                card.addEventListener('touchstart', dragStart, {passive: true});
+                feed.appendChild(card);
+            });
+        }
+
+        let activeCard = null, startX, startY, initialX, initialY;
+        function dragStart(e) {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return; // Dont drag if clicking buttons
+            activeCard = e.currentTarget;
+            activeCard.style.zIndex = ++maxZIndex;
+            activeCard.style.transition = 'none';
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            
+            // Extract current translation from transform string
+            const transform = activeCard.style.transform;
+            const match = transform.match(/translate\(([^pxvw]+)[pxvw]+,\s*([^pxvw]+)[pxvw]+\)\s*rotate\(([^deg]+)deg\)/);
+            if(match) {
+                initialX = parseFloat(activeCard.dataset.x) || window.innerWidth/2;
+                initialY = parseFloat(match[2]);
+            }
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('touchmove', drag, {passive: false});
+            document.addEventListener('touchend', dragEnd);
+        }
+
+        function drag(e) {
+            if(!activeCard) return;
+            e.preventDefault();
+            const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            const dx = currentX - startX;
+            const dy = currentY - startY;
+            
+            // Retain original rotation
+            const rot = activeCard.style.transform.match(/rotate\(([^deg]+)deg\)/)[1];
+            activeCard.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px) rotate(${rot}deg)`;
+        }
+
+        function dragEnd(e) {
+            if(!activeCard) return;
+            activeCard.style.transition = 'transform 0.2s ease, z-index 0s, box-shadow 0.2s ease';
+            // Save new position internally
+            const transform = activeCard.style.transform;
+            const match = transform.match(/translate\(([^px]+)px,\s*([^px]+)px\)/);
+            if(match) { activeCard.dataset.x = match[1]; }
+            
+            activeCard = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', dragEnd);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('touchend', dragEnd);
+        }
+
+        // ==========================================
+        // 6. UI MODALS & CRUD LOGIC
+        // ==========================================
         window.decodeMemory = function(id, realUrl, element) {
             const imgEl = element.querySelector('img');
             const hint = element.querySelector('.steg-hint');
             if(imgEl.src !== realUrl) {
                 element.classList.add('glitch');
-                setTimeout(() => {
-                    imgEl.src = realUrl;
-                    element.classList.remove('glitch');
-                    if(hint) hint.classList.add('hidden');
-                }, 400);
+                setTimeout(() => { imgEl.src = realUrl; element.classList.remove('glitch'); if(hint) hint.classList.add('hidden'); }, 400);
             }
         };
 
-        // EDIT MODAL
-        window.openEditModal = function(id) {
-            editingMemoryId = id;
+        window.openLightbox = function(id) {
             const mem = memories.find(m => m.id === id);
-            document.getElementById('edit-caption').value = mem.caption;
-            document.getElementById('edit-vibe').value = mem.vibe;
-            document.getElementById('edit-image').value = "";
-            document.getElementById('edit-cover').value = "";
+            if(!mem) return;
+            document.getElementById('lightbox-img').src = mem.cover_image_url || mem.image_url;
+            document.getElementById('lightbox-caption').innerText = mem.caption;
+            const lb = document.getElementById('lightbox-overlay');
+            lb.classList.remove('hidden'); setTimeout(() => lb.classList.remove('opacity-0'), 10);
+        };
+        window.closeLightbox = function() { const lb = document.getElementById('lightbox-overlay'); lb.classList.add('opacity-0'); setTimeout(() => lb.classList.add('hidden'), 300); };
+
+        window.openEditModal = function(id) {
+            editingMemoryId = id; const mem = memories.find(m => m.id === id);
+            document.getElementById('edit-caption').value = mem.caption; document.getElementById('edit-vibe').value = mem.vibe;
+            document.getElementById('edit-image').value = ""; document.getElementById('edit-cover').value = "";
             document.getElementById('edit-modal').classList.remove('hidden');
         };
-
-        window.closeEditModal = function() {
-            editingMemoryId = null;
-            document.getElementById('edit-modal').classList.add('hidden');
-        };
+        window.closeEditModal = function() { editingMemoryId = null; document.getElementById('edit-modal').classList.add('hidden'); };
 
         document.getElementById('save-edit-btn').addEventListener('click', async () => {
             if(!editingMemoryId) return;
-            const loader = document.getElementById('edit-loading');
-            loader.classList.remove('hidden');
-
+            document.getElementById('edit-loading').classList.remove('hidden');
             try {
                 const mem = memories.find(m => m.id === editingMemoryId);
-                const newCaption = document.getElementById('edit-caption').value;
-                const newVibe = document.getElementById('edit-vibe').value;
-                
                 const newMainUrl = await uploadFileToStorage('edit-image', 'memories') || mem.image_url;
                 const newCoverUrl = await uploadFileToStorage('edit-cover', 'memories') || mem.cover_image_url;
-
-                const payload = { caption: newCaption, vibe: newVibe, image_url: newMainUrl, cover_image_url: newCoverUrl };
-                
-                const { error } = await supabaseClient.from('memories').update(payload).eq('id', editingMemoryId);
-                if (error) throw error;
-
-                // Update local array
-                mem.caption = newCaption; mem.vibe = newVibe; mem.image_url = newMainUrl; mem.cover_image_url = newCoverUrl;
-                renderMemories();
+                const payload = { caption: document.getElementById('edit-caption').value, vibe: document.getElementById('edit-vibe').value, image_url: newMainUrl, cover_image_url: newCoverUrl };
+                await supabaseClient.from('memories').update(payload).eq('id', editingMemoryId);
+                await loadDataFromCloud();
                 closeEditModal();
-            } catch(e) {
-                console.error(e);
-                alert("Failed to save edits.");
-            }
-            loader.classList.add('hidden');
+            } catch(e) { alert("Failed to save edits."); }
+            document.getElementById('edit-loading').classList.add('hidden');
         });
 
-        // DELETE
         window.deleteMemory = async function(id) {
             if (!confirm("Delete this memory forever?")) return;
             memories = memories.filter(m => m.id !== id);
-            renderMemories();
+            renderScatteredMemories();
             await supabaseClient.from('memories').delete().eq('id', id);
         };
 
-        // AUDIO
-        window.playMemoryAudio = function(url) {
-            const player = new Audio(url);
-            player.play().catch(e => alert("Audio playback blocked."));
-        };
-
-        function renderMemories() {
-            const feed = document.getElementById('memory-feed');
-            feed.innerHTML = memories.map(memory => {
-                let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                if (memory.vibe.includes('Chaotic') || memory.vibe.includes('Disaster')) badgeClass = 'bg-red-100 text-red-800 border-red-200';
-                if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800 border-purple-200';
-                let dateStr = memory.created_at ? new Date(memory.created_at).toLocaleDateString() : "";
-
-                const isSteg = !!memory.cover_image_url;
-                const displayUrl = isSteg ? memory.cover_image_url : memory.image_url;
-                const onClickLogic = isSteg ? `ondblclick="decodeMemory(${memory.id}, '${memory.image_url}', this)"` : "";
-                const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Double-click to Decode 👁️</span></div>` : "";
-
-                const audioHTML = memory.audio_url ? `<button onclick="event.stopPropagation(); playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow-md z-20 transition-transform hover:scale-110" title="Play Director's Cut">▶️</button>` : "";
-
-                return `
-                <div class="bg-[#fdf5e6] p-4 pb-12 shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform hover:scale-105 transition-transform duration-300 relative rotate-1 hover:rotate-0 border border-stone-300 group cursor-pointer" ${onClickLogic}>
-                    
-                    <div class="absolute top-2 right-2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onclick="event.stopPropagation(); openEditModal(${memory.id})" class="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md" title="Edit Memory">✏️</button>
-                        <button onclick="event.stopPropagation(); deleteMemory(${memory.id})" class="bg-red-600/80 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md" title="Delete Memory">🗑️</button>
-                    </div>
-
-                    ${audioHTML}
-                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow-sm z-10 border-2 border-red-900/50"></div>
-                    
-                    <div class="aspect-square bg-stone-200 mb-4 overflow-hidden border border-stone-300 relative">
-                        <img src="${displayUrl}" class="w-full h-full object-cover transition-all duration-300" />
-                        ${hintHTML}
-                        <button onclick="event.stopPropagation(); openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 hover:bg-black/90 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm" title="View Fullscreen">🔍</button>
-                    </div>
-                    
-                    <p class="text-stone-800 font-serif text-lg leading-snug mb-4">${memory.caption}</p>
-                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs font-sans font-bold">
-                        <span class="text-stone-500">${dateStr}</span>
-                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[120px] truncate">${memory.vibe}</span>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        // ==========================================
-        // 5. INTERACTIVE FEATURES
-        // ==========================================
+        window.playMemoryAudio = function(url) { new Audio(url).play().catch(e => alert("Audio playback blocked.")); };
 
         // AUDIO RECORDER
         const recordBtn = document.getElementById('record-btn');
@@ -667,166 +730,22 @@
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.start();
-                    audioChunks = [];
-                    recordBtn.innerText = "🛑 Stop Recording";
-                    recordBtn.classList.replace('bg-red-900/80', 'bg-red-500');
-                    recordBtn.classList.add('animate-pulse');
-
-                    mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
-
+                    mediaRecorder.start(); audioChunks = [];
+                    recordBtn.innerText = "🛑 Stop"; recordBtn.classList.replace('bg-red-900/80', 'bg-red-500');
+                    mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
                     mediaRecorder.addEventListener("stop", () => {
                         audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        const preview = document.getElementById('audio-preview');
-                        preview.src = audioUrl;
-                        preview.classList.remove('hidden');
-                        
-                        stream.getTracks().forEach(track => track.stop());
-                        recordBtn.innerText = "🎤 Re-Record";
-                        recordBtn.classList.replace('bg-red-500', 'bg-red-900/80');
-                        recordBtn.classList.remove('animate-pulse');
+                        document.getElementById('audio-preview').src = URL.createObjectURL(audioBlob);
+                        document.getElementById('audio-preview').classList.remove('hidden');
+                        stream.getTracks().forEach(t => t.stop());
+                        recordBtn.innerText = "🎤 Re-Record"; recordBtn.classList.replace('bg-red-500', 'bg-red-900/80');
                     });
-                } catch (err) {
-                    alert("Microphone access denied or unavailable.");
-                }
+                } catch (err) { alert("Mic denied."); }
             } else { mediaRecorder.stop(); }
         });
 
-        // DYNAMIC THEME BGM LOGIC
-        const bgmBtn = document.getElementById('bgm-toggle');
-        
-        function updateBGM(isThemeChange = false) {
-            const targetSrc = settings.currentTheme === 'birthday' ? settings.bgmUrl : settings.bgmVillageUrl;
-            const isCurrentlyPlaying = !bgmPlayer.paused && bgmPlayer.currentTime > 0;
-
-            if (bgmPlayer.src !== targetSrc) {
-                bgmPlayer.src = targetSrc || "";
-                if (isCurrentlyPlaying && targetSrc) {
-                    bgmPlayer.play().catch(e=>console.log("Autoplay prevented"));
-                } else if (isCurrentlyPlaying && !targetSrc) {
-                    bgmPlayer.pause();
-                    bgmBtn.innerText = "🎵 Play Background Music";
-                    bgmBtn.classList.replace('text-stone-100', 'text-amber-500');
-                }
-            }
-        }
-
-        bgmBtn.addEventListener('click', () => {
-            if(bgmPlayer.paused) {
-                bgmPlayer.play();
-                bgmBtn.innerText = "🔇 Pause Background Music";
-                bgmBtn.classList.replace('text-amber-500', 'text-stone-100');
-            } else {
-                bgmPlayer.pause();
-                bgmBtn.innerText = "🎵 Play Background Music";
-                bgmBtn.classList.replace('text-stone-100', 'text-amber-500');
-            }
-        });
-
-        // THEMES
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        function applyTheme() {
-            const elements = ['gate-icon-1', 'gate-icon-2', 'gate-icon-3', 'gate-title-icon', 'card-icon'];
-            const appBody = document.getElementById('app-body');
-            
-            if (settings.currentTheme === 'birthday') {
-                appBody.classList.remove('bg-theme-village', 'theme-village');
-                appBody.classList.add('bg-theme-birthday');
-                themeToggleBtn.innerText = "🏮 Switch to Village Theme";
-                elements.forEach((id, i) => { const el = document.getElementById(id); if(el) el.innerText = i%2===0 ? "✨" : (id==='gate-title-icon'?"🎂":"🎉"); });
-            } else {
-                appBody.classList.remove('bg-theme-birthday');
-                appBody.classList.add('bg-theme-village', 'theme-village');
-                themeToggleBtn.innerText = "🎊 Switch to Birthday Theme";
-                elements.forEach(id => { const el = document.getElementById(id); if(el) el.innerText = "🐍"; });
-            }
-            updateBGM(true);
-        }
-
-        themeToggleBtn.addEventListener('click', async () => {
-            settings.currentTheme = settings.currentTheme === 'birthday' ? 'village' : 'birthday';
-            applyTheme();
-            await supabaseClient.from('vault_settings').update({ current_theme: settings.currentTheme }).eq('id', 1);
-        });
-
-        // CHAOS KEYWORD
-        document.addEventListener('keydown', (e) => {
-            if (!document.getElementById('admin-panel').classList.contains('hidden') || !document.getElementById('password-prompt').classList.contains('hidden') || !document.getElementById('edit-modal').classList.contains('hidden')) return;
-            if (e.key.length === 1) {
-                keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-20);
-                const targetWord = settings.chaosKeyword ? settings.chaosKeyword.toLowerCase() : null;
-                if (targetWord && keyBuffer.includes(targetWord)) {
-                    document.getElementById('chaos-meme-img').src = settings.chaosMemeUrl;
-                    const overlay = document.getElementById('chaos-overlay');
-                    overlay.classList.remove('hidden');
-                    setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                    setTimeout(() => { overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300); }, 3500);
-                    keyBuffer = ""; 
-                }
-            }
-        });
-
         // ==========================================
-        // 6. ANIME SLIDESHOW SEQUENCE
-        // ==========================================
-        let animeInterval;
-        let slideIndex = 0;
-        let shuffledMems = [];
-        const animeOverlay = document.getElementById('anime-sequence-overlay');
-        const animeImg = document.getElementById('anime-img');
-        const animeText = document.getElementById('anime-text');
-        const animeFlash = document.getElementById('anime-flash-layer');
-
-        window.triggerAnimeSequence = function() {
-            if(memories.length < 3) return alert("You need at least 3 memories to play the sequence!");
-            shuffledMems = [...memories].sort(() => 0.5 - Math.random());
-            slideIndex = 0;
-            
-            animeOverlay.classList.remove('hidden');
-            if(bgmPlayer.paused && (settings.bgmUrl || settings.bgmVillageUrl)) { 
-                bgmPlayer.currentTime = 0; 
-                bgmPlayer.play().catch(e=>console.log(e));
-                bgmBtn.innerText = "🔇 Pause Background Music";
-                bgmBtn.classList.replace('text-amber-500', 'text-stone-100');
-            }
-            
-            runAnimeSlide();
-            animeInterval = setInterval(runAnimeSlide, 1500);
-        };
-
-        window.stopAnimeSequence = function() {
-            clearInterval(animeInterval);
-            animeOverlay.classList.add('hidden');
-            animeImg.classList.remove('anime-slide-active');
-            animeText.classList.remove('anime-text-active');
-        };
-
-        function runAnimeSlide() {
-            if(slideIndex >= shuffledMems.length || slideIndex > 15) return stopAnimeSequence(); 
-            const mem = shuffledMems[slideIndex];
-            
-            animeFlash.classList.remove('anime-flash-active');
-            void animeFlash.offsetWidth; 
-            animeFlash.classList.add('anime-flash-active');
-
-            animeImg.src = mem.image_url;
-            animeImg.classList.remove('anime-slide-active');
-            animeImg.style.opacity = 1;
-            void animeImg.offsetWidth;
-            animeImg.classList.add('anime-slide-active');
-
-            const shortCaption = mem.caption.split('.')[0] || "CHAOS";
-            animeText.innerText = shortCaption;
-            animeText.classList.remove('anime-text-active');
-            void animeText.offsetWidth;
-            animeText.classList.add('anime-text-active');
-
-            slideIndex++;
-        }
-
-        // ==========================================
-        // 7. GATE & ADMIN LOGIC
+        // 7. GATE & ANIME SEQUENCE
         // ==========================================
         document.getElementById('unlock-btn').addEventListener('click', () => {
             if (settings.isBypassEnabled) return triggerUnwrap();
@@ -837,136 +756,112 @@
                 triggerUnwrap();
             } else {
                 wrongAudioPlayer.play().catch(e => console.log(e));
-                const eMsg = document.getElementById('error-msg');
-                eMsg.innerText = "Access Denied. Nice try.";
-                eMsg.classList.remove('hidden');
-                setTimeout(() => eMsg.classList.add('hidden'), 4000);
+                const eMsg = document.getElementById('error-msg'); eMsg.innerText = "Access Denied. Nice try.";
+                eMsg.classList.remove('hidden'); setTimeout(() => eMsg.classList.add('hidden'), 4000);
             }
         });
 
         function triggerUnwrap() {
+            if(settings.currentTheme === 'birthday') {
+                confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#ff7e00', '#facc15', '#ef4444'] });
+            }
             document.getElementById('gate-screen').classList.add('fade-out-scale');
             document.getElementById('admin-trigger').classList.add('hidden');
             setTimeout(() => {
                 document.getElementById('gate-screen').classList.add('hidden');
                 const v = document.getElementById('vault-screen');
-                v.classList.remove('hidden');
-                setTimeout(() => v.classList.remove('opacity-0'), 50);
+                v.classList.remove('hidden'); setTimeout(() => v.classList.remove('opacity-0'), 50);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 1500);
         }
 
-        document.getElementById('admin-trigger').addEventListener('click', () => {
-            document.getElementById('password-prompt').classList.remove('hidden');
-            document.getElementById('master-password').focus();
-        });
-        document.getElementById('cancel-password').addEventListener('click', () => {
-            document.getElementById('password-prompt').classList.add('hidden');
-            document.getElementById('master-password').value = '';
-        });
-        document.getElementById('close-admin').addEventListener('click', () => {
-            document.getElementById('admin-panel').classList.add('hidden');
-        });
+        let animeInterval; let slideIndex = 0; let shuffledMems = [];
+        window.triggerAnimeSequence = function() {
+            if(memories.length < 3) return alert("You need at least 3 memories to play the sequence!");
+            shuffledMems = [...memories].sort(() => 0.5 - Math.random());
+            slideIndex = 0;
+            document.getElementById('anime-sequence-overlay').classList.remove('hidden');
+            if(bgmPlayer.paused && (settings.bgmUrl || settings.bgmVillageUrl)) { 
+                bgmPlayer.currentTime = 0; bgmPlayer.play().catch(e=>console.log(e));
+                bgmBtn.innerText = "🔇 Pause Background Music"; bgmBtn.classList.replace('text-amber-500', 'text-stone-100');
+            }
+            runAnimeSlide();
+            animeInterval = setInterval(runAnimeSlide, 1500);
+        };
 
+        window.stopAnimeSequence = function() {
+            clearInterval(animeInterval);
+            document.getElementById('anime-sequence-overlay').classList.add('hidden');
+            document.getElementById('anime-img').classList.remove('anime-slide-active');
+            document.getElementById('anime-text').classList.remove('anime-text-active');
+        };
+
+        function runAnimeSlide() {
+            if(slideIndex >= shuffledMems.length || slideIndex > 15) return stopAnimeSequence(); 
+            const mem = shuffledMems[slideIndex];
+            const flash = document.getElementById('anime-flash-layer'), img = document.getElementById('anime-img'), txt = document.getElementById('anime-text');
+            
+            flash.classList.remove('anime-flash-active'); void flash.offsetWidth; flash.classList.add('anime-flash-active');
+            img.src = mem.image_url; img.classList.remove('anime-slide-active'); img.style.opacity = 1; void img.offsetWidth; img.classList.add('anime-slide-active');
+            txt.innerText = mem.caption.split('.')[0] || "CHAOS"; txt.classList.remove('anime-text-active'); void txt.offsetWidth; txt.classList.add('anime-text-active');
+            slideIndex++;
+        }
+
+        // ==========================================
+        // 8. ADMIN LOGIC
+        // ==========================================
+        document.getElementById('admin-trigger').addEventListener('click', () => { document.getElementById('password-prompt').classList.remove('hidden'); });
+        document.getElementById('cancel-password').addEventListener('click', () => { document.getElementById('password-prompt').classList.add('hidden'); });
+        document.getElementById('close-admin').addEventListener('click', () => { document.getElementById('admin-panel').classList.add('hidden'); });
         document.getElementById('submit-password').addEventListener('click', () => {
             if (document.getElementById('master-password').value === "Bittu2006+") {
                 document.getElementById('password-prompt').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 document.getElementById('master-password').value = '';
-            } else { alert("Incorrect master password."); }
+            } else alert("Incorrect master password.");
         });
 
-        // ADMIN CLOUD UPLOAD
         document.getElementById('save-settings').addEventListener('click', async () => {
-            const btn = document.getElementById('save-settings');
-            btn.innerText = "Uploading Files & Saving...";
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-
+            const btn = document.getElementById('save-settings'); btn.innerText = "Uploading Files & Saving..."; btn.classList.add('opacity-50', 'cursor-not-allowed');
             try {
-                const bgmUrl = await uploadFileToStorage('set-bgm-file', 'audio') || settings.bgmUrl;
-                const bgmVillageUrl = await uploadFileToStorage('set-bgm-village-file', 'audio') || settings.bgmVillageUrl;
-                const wrongAudioUrl = await uploadFileToStorage('set-audio-file', 'audio') || settings.wrongAudioUrl;
-                const wantedImg = await uploadFileToStorage('set-wanted-file', 'images') || settings.wantedImg;
-                const chaosMemeUrl = await uploadFileToStorage('set-chaos-file', 'images') || settings.chaosMemeUrl;
-
                 const payload = {
-                    bday_name: document.getElementById('set-name').value,
-                    bday_date: document.getElementById('set-date').value,
-                    bday_desc: document.getElementById('set-desc').value,
-                    wanted_name: document.getElementById('set-wanted-name').value,
-                    wanted_crime: document.getElementById('set-wanted-crime').value,
-                    wanted_bounty: document.getElementById('set-wanted-bounty').value,
-                    wanted_img: wantedImg,
-                    chaos_keyword: document.getElementById('set-chaos-keyword').value,
-                    chaos_meme_url: chaosMemeUrl,
+                    bday_name: document.getElementById('set-name').value, bday_date: document.getElementById('set-date').value, bday_desc: document.getElementById('set-desc').value,
+                    wanted_name: document.getElementById('set-wanted-name').value, wanted_crime: document.getElementById('set-wanted-crime').value, wanted_bounty: document.getElementById('set-wanted-bounty').value,
+                    wanted_img: await uploadFileToStorage('set-wanted-file', 'images') || settings.wantedImg,
                     q1: document.getElementById('set-q1').value, a1: document.getElementById('set-a1').value,
                     q2: document.getElementById('set-q2').value, a2: document.getElementById('set-a2').value,
                     q3: document.getElementById('set-q3').value, a3: document.getElementById('set-a3').value,
-                    wrong_audio_url: wrongAudioUrl,
-                    bgm_url: bgmUrl,
-                    bgm_village_url: bgmVillageUrl,
+                    wrong_audio_url: await uploadFileToStorage('set-audio-file', 'audio') || settings.wrongAudioUrl,
+                    bgm_url: await uploadFileToStorage('set-bgm-file', 'audio') || settings.bgmUrl,
+                    bgm_village_url: await uploadFileToStorage('set-bgm-village-file', 'audio') || settings.bgmVillageUrl,
                     is_bypass_enabled: document.getElementById('setting-bypass').checked
                 };
-
-                const { error } = await supabaseClient.from('vault_settings').update(payload).eq('id', 1);
-                if (error) throw error;
-
-                await loadDataFromCloud();
-                document.getElementById('admin-panel').classList.add('hidden');
-                
-                document.getElementById('set-bgm-file').value = "";
-                document.getElementById('set-bgm-village-file').value = "";
-                document.getElementById('set-audio-file').value = "";
-                document.getElementById('set-wanted-file').value = "";
-                document.getElementById('set-chaos-file').value = "";
-
-            } catch(e) {
-                console.error(e);
-                alert("Upload failed. Ensure files are small and bucket permissions are public.");
-            }
-            btn.innerText = "Save & Upload to Cloud";
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                await supabaseClient.from('vault_settings').update(payload).eq('id', 1);
+                await loadDataFromCloud(); document.getElementById('admin-panel').classList.add('hidden');
+            } catch(e) { alert("Upload failed."); }
+            btn.innerText = "Save & Upload to Cloud"; btn.classList.remove('opacity-50', 'cursor-not-allowed');
         });
 
-        // MEMORY DROP UPLOAD
         document.getElementById('pin-btn').addEventListener('click', async () => {
-            const caption = document.getElementById('upload-caption').value;
-            const vibe = document.getElementById('upload-vibe').value || "Unknown Vibe";
-            const mainImgInput = document.getElementById('upload-image');
-
-            if (!mainImgInput.files.length) return alert("You must select a Real Memory image!");
-            
-            const loader = document.getElementById('pin-loading');
-            loader.classList.remove('hidden');
-
+            if (!document.getElementById('upload-image').files.length) return alert("You must select a Real Memory image!");
+            document.getElementById('pin-loading').classList.remove('hidden');
             try {
-                const mainUrl = await uploadFileToStorage('upload-image', 'memories');
-                const coverUrl = await uploadFileToStorage('upload-cover', 'memories');
-                const voiceUrl = await uploadBlobToStorage(audioBlob, 'voice', 'webm');
-
-                const newMemory = { image_url: mainUrl, cover_image_url: coverUrl, audio_url: voiceUrl, caption: caption, vibe: vibe };
-                const { data, error } = await supabaseClient.from('memories').insert([newMemory]).select();
-                if (error) throw error;
-
-                if(data && data.length > 0) memories.unshift(data[0]);
-                renderMemories();
-
-                mainImgInput.value = '';
-                document.getElementById('upload-cover').value = '';
-                document.getElementById('upload-caption').value = '';
-                document.getElementById('upload-vibe').value = '';
-                document.getElementById('audio-preview').classList.add('hidden');
-                audioBlob = null;
-                recordBtn.innerText = "🎤 Record Audio";
-                
-            } catch(e) {
-                console.error(e);
-                alert("Failed to pin memory.");
-            }
-            loader.classList.add('hidden');
+                const newMemory = {
+                    image_url: await uploadFileToStorage('upload-image', 'memories'),
+                    cover_image_url: await uploadFileToStorage('upload-cover', 'memories'),
+                    audio_url: await uploadBlobToStorage(audioBlob, 'voice', 'webm'),
+                    caption: document.getElementById('upload-caption').value,
+                    vibe: document.getElementById('upload-vibe').value || "Unknown Vibe"
+                };
+                await supabaseClient.from('memories').insert([newMemory]);
+                await loadDataFromCloud();
+                document.getElementById('upload-image').value = ''; document.getElementById('upload-cover').value = '';
+                document.getElementById('upload-caption').value = ''; document.getElementById('upload-vibe').value = '';
+                document.getElementById('audio-preview').classList.add('hidden'); audioBlob = null; recordBtn.innerText = "🎤 Record Audio";
+            } catch(e) { alert("Failed to pin memory."); }
+            document.getElementById('pin-loading').classList.add('hidden');
         });
 
-        // START
         loadDataFromCloud();
     </script>
 </body>
