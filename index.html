@@ -53,26 +53,16 @@
             box-shadow: inset 0 0 40px rgba(139,69,19,0.5), 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* SCATTERED CORKBOARD STYLES */
-        #memory-feed {
-            position: relative;
-            min-height: 1200px; /* Gives room to drag */
-            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="%234a3628"/><circle cx="50" cy="50" r="2" fill="%23302219" opacity="0.5"/></svg>');
-            border: 12px solid #2e1d13;
-            border-radius: 8px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-            padding: 20px;
-            overflow: hidden;
-        }
-
+        /* DYNAMIC CARD STYLES */
         .polaroid-card {
-            position: absolute;
-            cursor: grab;
-            transition: transform 0.2s ease, z-index 0s, box-shadow 0.2s ease;
+            transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), left 0.5s ease, top 0.5s ease, box-shadow 0.2s ease;
             box-shadow: 2px 5px 15px rgba(0,0,0,0.4);
-            will-change: transform;
+            will-change: transform, left, top;
         }
-        .polaroid-card:active {
+        .polaroid-card.is-scattered {
+            cursor: grab;
+        }
+        .polaroid-card.is-scattered:active {
             cursor: grabbing;
             box-shadow: 10px 15px 30px rgba(0,0,0,0.6);
         }
@@ -372,9 +362,17 @@
                     </div>
                 </div>
 
-                <div class="text-center mb-8"><h3 class="text-3xl font-bold text-[#fdf5e6] font-serif">The Trio Board</h3><p class="text-stone-400 text-sm mt-2 font-sans">Drag memories around to organize the chaos.</p></div>
+                <div class="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 border-t border-stone-600 pt-12 gap-4">
+                    <div class="text-center md:text-left">
+                        <h3 class="text-3xl font-bold text-[#fdf5e6] font-serif">The Trio Board</h3>
+                        <p class="text-stone-400 text-sm mt-2 font-sans">Double-click suspicious photos. Click 🔍 to enlarge. Press ▶️ for audio.</p>
+                    </div>
+                    <button id="scatter-toggle" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                        🌪️ Scatter Memories
+                    </button>
+                </div>
 
-                <div id="memory-feed"></div>
+                <div id="memory-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative transition-all duration-500 min-h-[400px]"></div>
             </div>
         </section>
     </div>
@@ -391,10 +389,12 @@
         let settings = {};
         let memories = [];
         let editingMemoryId = null;
+        let isScattered = false;
+        let maxZIndex = 100;
+        
         let wrongAudioPlayer = new Audio();
         let bgmPlayer = new Audio(); bgmPlayer.loop = true;
         let audioBlob = null; let mediaRecorder = null; let audioChunks = [];
-        let maxZIndex = 100; // For dragging cards
 
         // ==========================================
         // 2. HELPER: UPLOAD FILE TO STORAGE
@@ -451,7 +451,7 @@
                 initSnake();
                 applyTheme();
                 updateUIWithSettings();
-                renderScatteredMemories();
+                renderMemories();
 
                 document.getElementById('loading-overlay').classList.add('opacity-0');
                 setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 500);
@@ -564,76 +564,132 @@
         });
 
         // ==========================================
-        // 5. CORKBOARD RENDERER & DRAG LOGIC
+        // 5. MEMORY RENDERER & TOGGLE LOGIC
         // ==========================================
-        function renderScatteredMemories() {
+        function renderMemories() {
             const feed = document.getElementById('memory-feed');
             feed.innerHTML = '';
             
-            memories.forEach((memory, index) => {
-                let badgeClass = 'bg-emerald-100 text-emerald-800';
-                if (memory.vibe.includes('Chaotic') || memory.vibe.includes('Disaster')) badgeClass = 'bg-red-100 text-red-800';
-                if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800';
+            memories.forEach((memory) => {
+                let badgeClass = 'bg-emerald-100 text-emerald-800 border-current';
+                if (memory.vibe.includes('Chaotic') || memory.vibe.includes('Disaster')) badgeClass = 'bg-red-100 text-red-800 border-current';
+                if (memory.vibe.includes('Late')) badgeClass = 'bg-purple-100 text-purple-800 border-current';
 
                 const isSteg = !!memory.cover_image_url;
                 const displayUrl = isSteg ? memory.cover_image_url : memory.image_url;
                 const onClickLogic = isSteg ? `ondblclick="decodeMemory(${memory.id}, '${memory.image_url}', this)"` : "";
                 const hintHTML = isSteg ? `<div class="steg-hint absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 pointer-events-none transition"><span class="text-white font-bold bg-purple-900/80 px-2 py-1 rounded text-xs">Dbl-Click Decode</span></div>` : "";
-                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow z-20">▶️</button>` : "";
+                const audioHTML = memory.audio_url ? `<button onclick="playMemoryAudio('${memory.audio_url}')" class="absolute top-2 left-2 bg-amber-500 text-stone-900 rounded-full w-8 h-8 flex items-center justify-center shadow z-20 hover:scale-110 transition-transform">▶️</button>` : "";
 
-                // Calculate Random Scatter
-                const rot = (Math.random() * 30) - 15; // -15 to +15 deg
-                const left = 5 + Math.random() * 70; // 5% to 75% wide
-                const top = 20 + (index * 120) + (Math.random() * 80 - 40); // Stack downwards
-                
                 const card = document.createElement('div');
-                card.className = "polaroid-card bg-[#fdf5e6] p-3 pb-10 group";
-                card.style.width = "280px";
-                card.style.transform = `translate(${left}vw, ${top}px) rotate(${rot}deg)`;
-                card.style.zIndex = index + 1;
-                card.dataset.x = left * (window.innerWidth / 100);
-                card.dataset.y = top;
-
+                card.className = "polaroid-card bg-[#fdf5e6] p-3 pb-10 group w-full max-w-[320px] mx-auto";
+                
                 card.innerHTML = `
-                    <button onclick="deleteMemory(${memory.id})" class="absolute top-2 right-2 bg-red-600/80 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100">🗑️</button>
-                    <button onclick="openEditModal(${memory.id})" class="absolute top-2 right-12 bg-blue-600/80 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100">✏️</button>
+                    <div class="absolute top-2 right-2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="openEditModal(${memory.id})" class="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md">✏️</button>
+                        <button onclick="deleteMemory(${memory.id})" class="bg-red-600/80 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md">🗑️</button>
+                    </div>
                     ${audioHTML}
                     <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-800 shadow border-2 border-red-900/50"></div>
                     <div class="aspect-square bg-stone-200 mb-3 overflow-hidden border border-stone-300 relative" ${onClickLogic}>
                         <img src="${displayUrl}" class="w-full h-full object-cover" />
                         ${hintHTML}
-                        <button onclick="openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 z-20">🔍</button>
+                        <button onclick="openLightbox(${memory.id})" class="absolute bottom-2 right-2 bg-black/60 text-white rounded p-1 text-xs opacity-0 group-hover:opacity-100 z-20 hover:bg-black/90">🔍</button>
                     </div>
                     <p class="text-stone-800 font-serif text-sm leading-snug mb-2">${memory.caption}</p>
                     <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center text-[10px] font-sans font-bold">
                         <span class="text-stone-500">${memory.created_at ? new Date(memory.created_at).toLocaleDateString() : ""}</span>
-                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[100px] truncate border-current">${memory.vibe}</span>
+                        <span class="px-2 py-1 rounded-full border ${badgeClass} max-w-[100px] truncate">${memory.vibe}</span>
                     </div>
                 `;
 
-                // Drag Logic
+                // Drag Listeners
                 card.addEventListener('mousedown', dragStart);
                 card.addEventListener('touchstart', dragStart, {passive: true});
                 feed.appendChild(card);
             });
+
+            applyCurrentLayoutState();
         }
 
-        let activeCard = null, startX, startY, initialX, initialY;
+        // ==========================================
+        // SCATTER & DRAG LOGIC
+        // ==========================================
+        document.getElementById('scatter-toggle').addEventListener('click', () => {
+            isScattered = !isScattered;
+            applyCurrentLayoutState();
+        });
+
+        function applyCurrentLayoutState() {
+            const feed = document.getElementById('memory-feed');
+            const cards = document.querySelectorAll('.polaroid-card');
+            const btn = document.getElementById('scatter-toggle');
+
+            if (isScattered) {
+                btn.innerText = "⏹️ Organize Photos";
+                
+                // Swap container to block for absolute positioning
+                feed.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+                feed.style.display = 'block';
+                
+                // Ensure the container is tall enough to hold scattered cards
+                feed.style.minHeight = Math.max(800, cards.length * 150) + 'px';
+
+                cards.forEach((card) => {
+                    card.classList.add('is-scattered');
+                    
+                    // Only apply random coords if not already absolutely positioned (so we don't reset dragged ones)
+                    if(card.style.position !== 'absolute') {
+                        // Max boundaries: feed width minus an assumed card width
+                        const maxX = feed.clientWidth - 300; 
+                        const maxY = feed.clientHeight - 350; 
+                        
+                        const randomX = Math.max(0, Math.random() * (maxX > 0 ? maxX : 50));
+                        const randomY = Math.max(0, Math.random() * (maxY > 0 ? maxY : 50));
+                        const randomRot = (Math.random() * 40) - 20;
+
+                        card.style.position = 'absolute';
+                        card.style.left = `${randomX}px`;
+                        card.style.top = `${randomY}px`;
+                        card.style.transform = `rotate(${randomRot}deg)`;
+                        card.style.zIndex = Math.floor(Math.random() * 50);
+                    }
+                });
+            } else {
+                btn.innerText = "🌪️ Scatter Memories";
+                
+                // Revert container to CSS Grid
+                feed.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+                feed.style.display = '';
+                feed.style.minHeight = '400px';
+
+                cards.forEach((card) => {
+                    card.classList.remove('is-scattered');
+                    card.style.position = 'relative';
+                    card.style.left = '0px';
+                    card.style.top = '0px';
+                    // Subtle random rotation for grid view
+                    card.style.transform = `rotate(${(Math.random() * 6) - 3}deg)`;
+                    card.style.zIndex = 1;
+                });
+            }
+        }
+
+        let activeCard = null, startX, startY, initialLeft, initialTop;
         function dragStart(e) {
-            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return; // Dont drag if clicking buttons
+            if (!isScattered) return;
+            // Prevent dragging if clicking a button or an image (so lightbox/edit works)
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            
             activeCard = e.currentTarget;
             activeCard.style.zIndex = ++maxZIndex;
-            activeCard.style.transition = 'none';
+            activeCard.style.transition = 'none'; // Disable transition so it doesn't lag behind mouse
+            
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
             startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
             
-            // Extract current translation from transform string
-            const transform = activeCard.style.transform;
-            const match = transform.match(/translate\(([^pxvw]+)[pxvw]+,\s*([^pxvw]+)[pxvw]+\)\s*rotate\(([^deg]+)deg\)/);
-            if(match) {
-                initialX = parseFloat(activeCard.dataset.x) || window.innerWidth/2;
-                initialY = parseFloat(match[2]);
-            }
+            initialLeft = parseFloat(activeCard.style.left) || 0;
+            initialTop = parseFloat(activeCard.style.top) || 0;
             
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', dragEnd);
@@ -642,26 +698,34 @@
         }
 
         function drag(e) {
-            if(!activeCard) return;
+            if (!activeCard || !isScattered) return;
             e.preventDefault();
+            
             const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
             const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            
             const dx = currentX - startX;
             const dy = currentY - startY;
             
-            // Retain original rotation
-            const rot = activeCard.style.transform.match(/rotate\(([^deg]+)deg\)/)[1];
-            activeCard.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px) rotate(${rot}deg)`;
+            const feed = document.getElementById('memory-feed');
+            const maxX = feed.clientWidth - activeCard.offsetWidth;
+            const maxY = feed.clientHeight - activeCard.offsetHeight;
+
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            // Clamp positions to stay inside the borders
+            newLeft = Math.max(0, Math.min(newLeft, maxX));
+            newTop = Math.max(0, Math.min(newTop, maxY));
+
+            activeCard.style.left = `${newLeft}px`;
+            activeCard.style.top = `${newTop}px`;
         }
 
-        function dragEnd(e) {
-            if(!activeCard) return;
-            activeCard.style.transition = 'transform 0.2s ease, z-index 0s, box-shadow 0.2s ease';
-            // Save new position internally
-            const transform = activeCard.style.transform;
-            const match = transform.match(/translate\(([^px]+)px,\s*([^px]+)px\)/);
-            if(match) { activeCard.dataset.x = match[1]; }
-            
+        function dragEnd() {
+            if (!activeCard) return;
+            // Re-enable transition for smooth toggling later
+            activeCard.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), left 0.5s ease, top 0.5s ease, box-shadow 0.2s ease';
             activeCard = null;
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', dragEnd);
@@ -717,7 +781,7 @@
         window.deleteMemory = async function(id) {
             if (!confirm("Delete this memory forever?")) return;
             memories = memories.filter(m => m.id !== id);
-            renderScatteredMemories();
+            renderMemories(); // Refresh feed
             await supabaseClient.from('memories').delete().eq('id', id);
         };
 
